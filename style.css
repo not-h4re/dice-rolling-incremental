@@ -110,7 +110,7 @@ button {
   margin: auto;
 }
 .milestone {
-  height: 5em;
+  min-height: 5em;
   width: auto;
   border: 2px solid white;
   background-color: #e01600;
