@@ -49,12 +49,14 @@ function getMinRoll() {
   a = a.add(upgs[3].eff())
   // a dice cant have negative sides
   a = a.min(player.maxroll)
+  if(miles[3].isOwned()) a=a.pow(1.3)
   return a
 }
 function getMaxRoll() {
   let a = D(1)
   a = a.add(upgs[1].eff())
   a = a.mul(upgs[2].eff())
+  if(miles[3].isOwned()) a=a.pow(1.18)
   return a
 }
 function pointMul() {
@@ -102,19 +104,21 @@ const upgs = {
     },
     effDis() {return "+"+f(upgs[1].eff())},
     unlocked() {return true},
-    eff() {return player.upgs[1].mul(upgs[9].eff())},
-    curr: "points"
+    eff() {return player.upgs[1].mul(upgs[9].eff()).pow(miles[4].isOwned()?1.3:1)},
+    curr: "points",
+    cap: D(100),
   },
   2: {
-    description() { return `x`+f(D(1.21))+` to max roll`},
+    description() { return `x`+f(D(1.21).pow(miles[5].isOwned?2:1))+` to max roll`},
     cost() {
       return D(10).mul(D(1.15).pow(D(1.15).pow(player.upgs[2].add(20)))).div(3)
       .div(upgCostMod())
     },
     effDis() {return f(upgs[2].eff())+"x"},
     unlocked() {return player.maxroll.gte(6) || player.unl.gambling},
-    eff() {return D(1.21).pow(player.upgs[2])},
-    curr: "points"
+    eff() {return D(1.21).pow(miles[5].isOwned?2:1).pow(player.upgs[2])},
+    curr: "points",
+    cap: D(125),
   },
   3: {
     description() {return `+`+f(upgs[5].eff().mul(1.5))+` to min roll`},
@@ -124,8 +128,9 @@ const upgs = {
     },
     effDis() {return "+"+f(upgs[3].eff())},
     unlocked() {return player.maxroll.gte(25) || player.unl.gambling},
-    eff() {return player.upgs[3].mul(1.5).mul(upgs[5].eff())},
-    curr: "points"
+    eff() {return player.upgs[3].mul(1.5).mul(upgs[5].eff()).pow(miles[4].isOwned()?1.3:1)},
+    curr: "points",
+    cap: D(1000)
   },
   4: {
     description() {return `Generate points based on average points per roll`},
@@ -138,20 +143,24 @@ const upgs = {
     eff() {
       let eff = player.upgs[4].gte(1)?D(2).pow(player.upgs[4].sub(1)).pow(0.777):D(0)
       if(eff.gte(74.33)) eff=eff.sub(74.33).pow(0.7).add(74.33)
-      return eff.mul(gainEst().mul(20))
+      eff = eff.mul(gainEst().mul(20))
+      if(miles[6].isOwned()) eff = eff.pow(1.06)
+      return eff
     },
-    curr: "points"
+    curr: "points",
+    cap: D(40),
   },
   5: {
-    description() {return `Upgrade 3s effect base +x`+f(player.upgs[5].add(1).mul(1), 0)},
+    description() {return `Upgrade 3s effect base +x`+f(player.upgs[5].mul(miles[6].isOwned()?2:1).add(1), 0)},
     cost() {
       return D(10).add(player.upgs[5].mul(2)).pow(player.upgs[5]).mul(1e3)
       .div(upgCostMod())
     },
     effDis() {return "+x"+f(upgs[5].eff().sub(1),0)},
-    eff() {return D(1).mul(player.upgs[5].mul(player.upgs[5].add(1)).div(2)).add(1)},
+    eff() {return D(1).mul(player.upgs[5].mul(miles[6].isOwned()?2:1).mul(player.upgs[5].mul(miles[6].isOwned()?2:1).add(1)).div(2)).add(1)},
     unlocked() {return player.maxroll.gte(200) || player.unl.gambling},
-    curr: "points"
+    curr: "points",
+    cap: D(25),
   },
   6: {
     description() {return `Multiply point gain`},
@@ -165,7 +174,8 @@ const upgs = {
       return player.upgs[6].add(1).log(2).pow(1.25).add(1)
     },
     unlocked() {return player.minroll.gte(400) || player.unl.gambling},
-    curr: "points"
+    curr: "points",
+    cap: D(1000),
   },
   7: {
     description() {return `Divide all upgrades cost`},
@@ -173,10 +183,11 @@ const upgs = {
       return D(1e5).mul(D(10).pow(D(1.333).pow(player.upgs[7])))
       .div(upgCostMod())
     },
-    effDis() {return "÷"+f(upgs[7].eff())},
-    eff() {return player.upgs[7].gte(4)?player.upgs[7].pow(1.4).add(1).sub(7.5).max(1).pow(player.upgs[7].gte(6)?D(1):D(0.55)).add(7.5) : player.upgs[7].pow(1.4).add(1)},
+    effDis() {return "/"+f(upgs[7].eff())},
+    eff() {return player.upgs[7].pow(1.4 + (miles[3].isOwned()?0.6:0)).add(1)},
     unlocked() {return player.maxroll.gte(530) || player.unl.gambling},
     curr: "points",
+    cap: D(1000),
   },
   8: {
     description() {return `Point gain is boosted based on points`},
@@ -184,37 +195,39 @@ const upgs = {
       return player.upgs[8].lt(10)?D(1e4).mul(D(1e3).pow(player.upgs[8])).div(upgCostMod()):Infinity
     },
     effDis() {return f(upgs[8].eff())+"x"},
-    eff() {return player.upgs[8].gte(1)?player.points.root(3.33).pow(D(0.03).mul(player.upgs[8]).add(0.3)):D(1)},
+    eff() {return player.upgs[8].gte(1)?player.points.root(3.33 - (miles[3].isOwned()?1:0)).pow(D(0.03).mul(player.upgs[8]).add(0.3)):D(1)},
     unlocked() {return (player.maxroll.gte(900) && player.minroll.gte(800)) || player.unl.gambling},
     curr: "points",
+    cap: D(10),
   },
   9: {
-    description() {return `+x`+f(player.upgs[9].add(1).mul(D(1).div(3)))+` to upgrade 1s effect base`},
+    description() {return `+x`+f(player.upgs[9].add(1).mul(D(1).div(miles[4].isOwned()?2:3)))+` to upgrade 1s effect base`},
     cost() {return D(5e7).mul(16).mul(D(2).pow(D(1.88).pow(player.upgs[9]))).div(upgCostMod())},
     effDis() {return f(upgs[9].eff())+`x`},
-    eff() {return player.upgs[9].mul(player.upgs[9].add(1)).div(2).mul(D(1).div(3)).add(1)},
+    eff() {return player.upgs[9].mul(player.upgs[9].add(1)).div(2).mul(D(1).div(miles[4].isOwned()?2:3)).add(1)},
     unlocked() {return player.maxroll.gte(1.25e3) || player.unl.gambling},
     curr: "points",
+    cap: D(20),
   },
 }
 function buyupg(x, isfree=false) {
-  if(player[upgs[x].curr].lt(upgs[x].cost())) return
+  if(!canAfford(x)) return
   if(!isfree) player[upgs[x].curr] = player[upgs[x].curr].sub(upgs[x].cost())
   player.upgs[x] = player.upgs[x].add(1)
 }
 function canAfford(x){
-  return player[upgs[x].curr].gte(upgs[x].cost())
+  return player[upgs[x].curr].gte(upgs[x].cost()) && player.upgs[x].lt(upgs[x].cap)
 }
 
 // gambling level
 
 function gamblingLevelReq(x){
-  // point req = 10^(current g.l.^2 + 11)
-  return Decimal.pow(10, x.pow(2).add(11))
-}
-function gamblingLevelFromPoints(x){
-  // sqrt(log10(points) - 11) = gambling level
-  return Decimal.sqrt(Decimal.sub(Decimal.log10(x), 11))
+  // point req = 10^(current g.l.^2 + 11) for x < 4
+  if(x.lt(4)) return Decimal.pow(10, x.pow(2).add(11))
+  // point req = 10^(4x+8) for 4 <= x <= 8
+  else if(x.gte(4) && x.lte(8)) return Decimal.pow(10, x.mul(4).add(8))
+  // point req = 10^(5x+5) for x > 8
+  else return Decimal.pow(10, x.mul(5).add(5))
 }
 function canIncreaseGamblingLevel(){
   // points >= req for next g.l.
@@ -233,7 +246,7 @@ function increaseGamblingLevel(){
 
 // non milestone boosts
 function gamblingLevelToPointMulti(){
-  return Decimal.pow(1.25, player.gamblinglevel)
+  return Decimal.pow(1.25, player.gamblinglevel.mul(miles[7].isOwned()?2:1))
 }
 function autoboughtUpgradesFromGamblingLevel(){
   return Decimal.min(player.gamblinglevel, 9)
@@ -260,7 +273,27 @@ const miles = {
   },
   3: {
     name: "Gambling Level 3",
-    effect: "Endgame",
-    isOwned() {return player.gamblinglevel.gte(3)}
-  }
+    effect: "Raise min roll to 1.3 and max roll to 1.18. Upgrades 7 and 8 are stronger",
+    isOwned() {return player.gamblinglevel.gte(3)},
+  },
+  4: {
+    name: "Gambling Level 4",
+    effect: "Raise point gain to 1.2. Upgrades 1, 3 and 9 are stronger",
+    isOwned() {return player.gamblinglevel.gte(4)},
+  },
+  5: {
+    name: "Gambling Level 5",
+    effect: "Upgrade 2 effect base is squared",
+    isOwned() {return player.gamblinglevel.gte(5)},
+  },
+  6: {
+    name: "Gambling Level 7",
+    effect: "Upgrades 4 and 5 are stronger",
+    isOwned() {return player.gamblinglevel.gte(7)},
+  },
+  7: {
+    name: "Gambling Level 8",
+    effect: "Square the gambling level effect. This is endgame",
+    isOwned() {return player.gamblinglevel.gte(8)}
+  },
 }

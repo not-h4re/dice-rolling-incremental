@@ -61,19 +61,19 @@
         <span class="opt upgs">
           <span v-for="n in 5">
             <button :class="{upg: true, can: canAfford(n)}" @click="buyupg(n)" v-if="upgs[n].unlocked()">
-              ({{f(player.upgs[n], 0)}})<br>
+              ({{f(player.upgs[n], 0)}}/{{f(upgs[n].cap, 0)}})<br>
               {{upgs[n].description()}}<br>
               Currently: {{upgs[n].effDis()}}<br>
-              Cost: {{f(upgs[n].cost())+" "+upgs[n].curr}}
+              {{player.upgs[n].gte(upgs[n].cap)?"Maxed!":("Cost: "+f(upgs[n].cost())+" "+upgs[n].curr)}}
             </button>
           </span>
         </span>
         <span class="opt upgs">
           <button v-for="n in 4" :class="{upg: true, can: canAfford(n+5)}" @click="buyupg(n+5)" v-if="upgs[n+5].unlocked()">
-            ({{f(player.upgs[n+5], 0)}})<br>
+            ({{f(player.upgs[n+5], 0)}}/{{f(upgs[n+5].cap, 0)}})<br>
             {{upgs[n+5].description()}}<br>
             Currently: {{upgs[n+5].effDis()}}<br>
-            {{upgs[n+5].cost==Infinity?"Bought":"Cost: "+f(upgs[n+5].cost())+" "+upgs[n+5].curr}}
+            {{player.upgs[n+5].gte(upgs[n+5].cap)?"Maxed!":("Cost: "+f(upgs[n+5].cost())+" "+upgs[n+5].curr)}}
           </button>
         </span>
       </div>
@@ -102,7 +102,7 @@
         </button>
         
         <div class="milecontainer">
-          <span v-for ="n in 3">
+          <span v-for ="n in 7">
             <div :class="{milestone: true, got: miles[n].isOwned()}">
               <h3 class="inline">
                 {{miles[n].name}}
