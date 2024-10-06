@@ -109,14 +109,14 @@ const upgs = {
     cap: D(100),
   },
   2: {
-    description() { return `x`+f(D(1.21).pow(miles[5].isOwned?2:1))+` to max roll`},
+    description() { return `x`+f(D(1.21).pow(miles[5].isOwned()?2:1))+` to max roll`},
     cost() {
       return D(10).mul(D(1.15).pow(D(1.15).pow(player.upgs[2].add(20)))).div(3)
       .div(upgCostMod())
     },
     effDis() {return f(upgs[2].eff())+"x"},
     unlocked() {return player.maxroll.gte(6) || player.unl.gambling},
-    eff() {return D(1.21).pow(miles[5].isOwned?2:1).pow(player.upgs[2])},
+    eff() {return D(1.21).pow(miles[5].isOwned()?2:1).pow(player.upgs[2])},
     curr: "points",
     cap: D(125),
   },
