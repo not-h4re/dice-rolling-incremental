@@ -47,9 +47,9 @@ function tab(x) {
 function getMinRoll() {
   let a = D(1)
   a = a.add(upgs[3].eff())
+  if(miles[3].isOwned()) a=a.pow(1.3)
   // a dice cant have negative sides
   a = a.min(player.maxroll)
-  if(miles[3].isOwned()) a=a.pow(1.3)
   return a
 }
 function getMaxRoll() {
