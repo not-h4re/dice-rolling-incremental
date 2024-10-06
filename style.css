@@ -1,0 +1,122 @@
+html {
+  background-color: #000000;
+  color:white;
+  font-size:18px;
+  text-align: center;
+  font-family: "Victor Mono", monospace;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+}
+button {
+  touch-action: manipulation;
+  z-index: 1;
+}
+
+.option {
+  background-color: #030303;
+  height: 100px;
+  width: 100px;
+  color: white;
+  border: 2px solid #eeeeee;
+  border-radius: 5px;
+  font-size: 17px;
+  transition: .3s
+}
+.option:hover {
+  background-color: #777777;
+  border: 2px solid #999999;
+  color: white;
+}
+.small {
+  height: 80px
+}
+.optioninput {
+  height: 20px;
+  width: 100px;
+}
+
+.tab {
+  height: 30px;
+  width: 150px;
+  background-color: #000000;
+  border: 2px solid #ffffff;
+  font-size: 20px;
+  color: white;
+  border-radius: 5px;
+  transition: .3s
+}
+.tab:hover {
+  background-color: #ffffff;
+  color: black;
+  border: 2px solid #dddddd;
+}
+
+.glowp {
+  display: inline;
+  font-size: 23px;
+  text-shadow: 0 0 10px;
+  color: white;
+}
+
+.opt {
+  display: flex;
+  justify-content: center;
+}
+
+.upg {
+  min-height: 125px;
+  width: 125px;
+  border-radius: 5px;
+  border: 2px solid #ffffff;
+  background-color: #111111;
+  color: white;
+  touch-action: manipulation;
+}
+.reset {
+  min-height: 125px;
+  width: 200px;
+  border-radius: 5px;
+  border: 2px solid #ffffff;
+  background-color: #111111;
+  color: white;
+  touch-action: manipulation;
+  font-size: 15px;
+}
+.can {
+  background-color: #004400;
+  color: white;
+  transition: .3s;
+}
+.can:hover {
+  transform: scale(1.15)
+}
+.rollbtn {
+  min-height: 100px;
+  width: 100px;
+  transition: .3s;
+}
+.rollbtn:hover {
+  transform: scale(1.15)
+}
+.inline {
+  display: inline;
+}
+
+.milecontainer {
+  width: 60%;
+  height: 15em;
+  overflow-y: auto;
+  margin: auto;
+}
+.milestone {
+  height: 5em;
+  width: auto;
+  border: 2px solid white;
+  background-color: #e01600;
+  border-radius: 5px;
+  margin-bottom: 2px;
+}
+.got {
+  background-color: #004400;
+}

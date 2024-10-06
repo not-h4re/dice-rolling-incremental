@@ -1,0 +1,144 @@
+<html lang="en">
+  <head>
+    <title>dice rolling incremental</title>
+    
+    <!-- stylesheet import -->
+    <link rel="stylesheet" href="style.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Victor+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="js/main.js" defer></script>
+    <script src="js/save.js" ></script>
+    <script src="libs/ExpantaNum.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/break_eternity.js@2.1.0/dist/break_eternity.min.js"></script>
+    <script src="js/customFormat.js" defer></script>
+    <script src="libs/notify.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=0.6">
+  </head>
+  <body>
+    <div id="app">
+      
+      <!-- POINT DISPLAY -->
+      You have <h2 class="glowp">{{f(player.points)}}</h2> points<br><br>
+      
+      <!-- TABS -->
+      <button class="tab" onclick="player.tab='main'">
+        Main
+      </button>
+      <button class="tab" onclick="player.tab='stat'">
+        Statistics
+      </button>
+      <button v-if="player.unl.gambling" class="tab" onclick="player.tab='gambling'">
+        Gambling
+      </button>
+      <button class="tab" onclick="player.tab='opt'">
+        Options
+      </button><br>
+      
+      <!-- MAIN GAME-->
+      <div v-if="player.tab=='main'">
+        <!--
+        this is testing
+        <span v-for="n in 10" :key="n">
+          {{n}}
+        </span>
+        -->
+        <span style="font-size:18px !important;">
+          Your dice has {{f(player.maxroll.sub(player.minroll).add(1))}} sides<br>
+          (Range: {{f(player.minroll)}} - {{f(player.maxroll)}})<br>
+          Point gain is x{{f(pointMul())}} of dice roll<br>
+          Upgrade n is autobought for free when upgrade n+4 is owned!<br>
+        </span>
+        <button class="upg rollbtn" onclick="roll()">
+          Roll the dice<br>
+          Last roll: {{f(player.result)}}
+        </button>
+        <br><br>
+        <span class="opt upgs">
+          <span v-for="n in 5">
+            <button :class="{upg: true, can: canAfford(n)}" @click="buyupg(n)" v-if="upgs[n].unlocked()">
+              ({{f(player.upgs[n], 0)}})<br>
+              {{upgs[n].description()}}<br>
+              Currently: {{upgs[n].effDis()}}<br>
+              Cost: {{f(upgs[n].cost())+" "+upgs[n].curr}}
+            </button>
+          </span>
+        </span>
+        <span class="opt upgs">
+          <button v-for="n in 4" :class="{upg: true, can: canAfford(n+5)}" @click="buyupg(n+5)" v-if="upgs[n+5].unlocked()">
+            ({{f(player.upgs[n+5], 0)}})<br>
+            {{upgs[n+5].description()}}<br>
+            Currently: {{upgs[n+5].effDis()}}<br>
+            {{upgs[n+5].cost==Infinity?"Bought":"Cost: "+f(upgs[n+5].cost())+" "+upgs[n+5].curr}}
+          </button>
+        </span>
+      </div>
+      
+      <!-- STATISTICS -->
+      <div v-if="player.tab=='stat'">
+        <br>
+        <h3 class="inline">General</h3><br>
+        You have rolled a total of {{f(player.rolls)}} times<br>
+        You have made a total of {{f(player.totalpoints)}} points<br>
+        You have played for {{f((currentTime() - player.started)/1000)}} seconds<br>
+      </div>
+      
+      <!-- GAMBLING :$ -->
+      <div v-if="player.tab=='gambling'">
+        Your gambling level is <h2 class="glowp">{{format(player.gamblinglevel, 0)}}</h2><br><br>
+        
+        Reset all base features (points, point upgrades) to increase your gambling level by 1<br>
+        Your gambling level multiplies point gain by {{format(gamblingLevelToPointMulti())}}<br>
+        It also autobuys the first {{formatWhole(autoboughtUpgradesFromGamblingLevel())}} point upgrades<br>
+        There are also milestones accosiated with gambling level<br><br>
+        
+        <button :class="{reset: true, can: canIncreaseGamblingLevel()}" onclick="increaseGamblingLevel()">
+          The next gambling level requires {{format(gamblingLevelReq(player.gamblinglevel))}} points<br><br>
+          Click this button to reset
+        </button>
+        
+        <div class="milecontainer">
+          <span v-for ="n in 3">
+            <div :class="{milestone: true, got: miles[n].isOwned()}">
+              <h3 class="inline">
+                {{miles[n].name}}
+              </h3><br>
+              {{miles[n].effect}}
+            </div>
+          </span>
+        </div>
+      </div>
+      
+      <!-- OPTIONS -->
+      <div v-if="player.tab=='opt'">
+        <br>
+        <div class="opt">
+          <button class="option" onclick="save()">
+            Save
+          </button>
+          <button class="option" onclick="exportSave()">
+            Export save
+          </button>
+          <div>
+            <button class="option small" onclick="importSave(document.getElementById('importbox').value)">
+              Import below save
+            </button><br>
+            <input id="importbox" class="optioninput">
+          </div>
+          <button class="option" onclick="hardReset()">
+            Reset all progress
+          </button>
+          <!-- 
+          TODO make importbox modal
+          also make option buttons be 3/row
+          -->
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
