@@ -22,6 +22,7 @@ function update(diff) {
     }
   }
   player.luck.points = player.luck.points.add(luckPointGen().mul(diff))
+  if(diff >= 30) simulateOfflineProgress()
 }
 
 setInterval(function() {

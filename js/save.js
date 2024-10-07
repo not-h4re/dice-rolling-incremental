@@ -101,9 +101,6 @@ function load() {
         formatWhole,
       },
     }))
-  if(player.upgs[4].gte(1) && (player.lasttick - Date.now()) >=30000) {
-    simulateOfflineProgress()
-  }
   gameLoaded=true
 }
 
