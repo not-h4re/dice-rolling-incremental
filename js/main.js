@@ -320,7 +320,6 @@ const miles = {
     isOwned() {return player.gamblinglevel.gte(8)}
   },
 }
-<<<<<<< HEAD
 
 function luckRoll(){
   let num = Math.random()
@@ -342,5 +341,3 @@ function getPointBoostFromLuck(){
   let eff = player.luck.points.add(1).log(2).pow(2).max(1)
   return eff
 }
-=======
->>>>>>> 1c0cc85b4bca00fae0884a65a55d42e3ba876e0d
