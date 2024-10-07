@@ -21,6 +21,7 @@ function update(diff) {
       buyupg(i,true)
     }
   }
+  player.luck.points = player.luck.points.add(luckPointGen().mul(diff))
 }
 
 setInterval(function() {
@@ -30,6 +31,19 @@ setInterval(function() {
     player.lasttick= Date.now()/1000
   }
 }, 50)
+
+function simulateOfflineProgress(){
+  let now = Date.now()/1000
+  let last = player.lasttick/1000
+  // calculate diff
+  let diff = now - last
+  // divide by 1000 - 1000 ticks
+  diff = diff/1000
+  // processing...
+  for(let i=1;i<=1000;i++){
+    update(diff)
+  }
+}
 
 function D(x) {
   return new Decimal(x)
@@ -41,8 +55,16 @@ function d(x){
 function currentTime() {
   return Date.now()
 }
-function tab(x) {
-  player.tab = x.toString()
+function tab(tab, subtab=undefined) {
+  player.tab = tab.toString()
+  if(subtab != undefined) player.subtab = subtab
+  else if(player.subtab != "none"){
+    player.prevtab[player.tab] = player.subtab
+    player.subtab = "none"
+  }
+}
+function checkTab(tab, subtab=undefined){
+  return player.tab==tab && (subtab==undefined || player.subtab==subtab)
 }
 function getMinRoll() {
   let a = D(1)
@@ -66,6 +88,7 @@ function pointMul() {
   if(player.gamblinglevel.gte(1)) m=m.mul(5)
   m=m.mul(gamblingLevelToPointMulti())
   if(miles[2].isOwned()) m=m.mul(Decimal.pow(2, player.gamblinglevel))
+  m=m.mul(getPointBoostFromLuck())
   return m
 }
 function rollnum() {
@@ -246,7 +269,7 @@ function increaseGamblingLevel(){
 
 // non milestone boosts
 function gamblingLevelToPointMulti(){
-  return Decimal.pow(1.25, player.gamblinglevel.mul(miles[7].isOwned()?2:1))
+  return Decimal.pow(1.25, player.gamblinglevel)
 }
 function autoboughtUpgradesFromGamblingLevel(){
   return Decimal.min(player.gamblinglevel, 9)
@@ -293,7 +316,28 @@ const miles = {
   },
   7: {
     name: "Gambling Level 8",
-    effect: "Square the gambling level effect. This is endgame",
+    effect: "Unlock luck and luck points",
     isOwned() {return player.gamblinglevel.gte(8)}
   },
+}
+
+function luckRoll(){
+  let num = Math.random()
+  player.luck.lastroll = num
+  let goal = player.luck.luck.pow_base(2).recip()
+  
+  if(goal.gte(num)) player.luck.luck = player.luck.luck.add(1)
+  player.luck.lastsuccess = goal.gte(num)
+}
+function luckPointGen(){
+  let gen = player.luck.luck.mul(Decimal.pow(1.25, player.luck.luck))
+  return gen
+}
+function luckIncreaseChance(){
+  let goal = player.luck.luck.pow_base(2).recip()
+  return goal
+}
+function getPointBoostFromLuck(){
+  let eff = player.luck.points.add(1).log(2).pow(2).max(1)
+  return eff
 }

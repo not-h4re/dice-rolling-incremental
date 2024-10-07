@@ -32,7 +32,7 @@
       <button class="tab" onclick="player.tab='stat'">
         Statistics
       </button>
-      <button v-if="player.unl.gambling" class="tab" onclick="player.tab='gambling'">
+      <button v-if="player.unl.gambling" class="tab" onclick="tab('gambling', player.prevtab.gambling)">
         Gambling
       </button>
       <button class="tab" onclick="player.tab='opt'">
@@ -88,7 +88,17 @@
       </div>
       
       <!-- GAMBLING :$ -->
-      <div v-if="player.tab=='gambling'">
+      <div v-if="checkTab('gambling')">
+        <br>
+        <button class="tab" onclick="tab('gambling', 'main')">
+          Main
+        </button>
+        <button class="tab" onclick="tab('gambling', 'luck')" v-if="miles[7].isOwned()">
+          Luck
+        </button>
+      </div>
+
+      <div v-if="checkTab('gambling', 'main')">
         Your gambling level is <h2 class="glowp">{{format(player.gamblinglevel, 0)}}</h2><br><br>
         
         Reset all base features (points, point upgrades) to increase your gambling level by 1<br>
@@ -112,6 +122,19 @@
           </span>
         </div>
       </div>
+
+      <div v-if="checkTab('gambling', 'luck')">
+        <span v-if="player.gwaed == true">the gwa is in<br></span>
+        You have <span class="glowp">{{format(player.luck.luck, 0)}}</span> luck<br>
+        You have <span class="glowp">{{format(player.luck.points)}}</span> luck points, multiplying point gain by <span class="glowp">{{format(getPointBoostFromLuck())}}</span><br>
+        Your luck generates {{format(luckPointGen())}} luck points/second<br>
+        The chance of increasing your luck next roll is {{format(luckIncreaseChance().mul(100))}}%<br>
+        <br>
+        <button onclick="luckRoll()" class="rollbtn upg">
+          Click to roll<br>
+          The last roll was a {{player.luck.lastsuccess?"success":"failure" + "\n("+format(player.luck.lastroll, 7)+")"}}
+        </button>
+      </div>
       
       <!-- OPTIONS -->
       <div v-if="player.tab=='opt'">
@@ -131,6 +154,12 @@
           </div>
           <button class="option" onclick="hardReset()">
             Reset all progress
+          </button>
+          <button class="option" onclick="player.offlineprogress = !player.offlineprogress">
+            Offline progress: {{player.offlineprogress}}
+          </button>
+          <button class="option" onclick="player.gwaed = false" v-if="player.gwaed">
+            Remove the gwa
           </button>
           <!-- 
           TODO make importbox modal

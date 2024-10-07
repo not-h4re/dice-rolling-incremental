@@ -4,27 +4,41 @@ gameLoaded = false
 
 function start(){
   let a={
+    // tabs
+    tab: "main",
+    subtab: "none",
+    prevtab: {
+      gambling: "main",
+    },
     // other
-    tab:"main",
     lasttick: 0,
     // Base game
     points: d(0),
     minroll: d(0),
     maxroll: d(1),
     result: d(0),
-    upgs: [null,d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0)],
+    upgs: [null,d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0)],
     unl: {
       gambling: false,
     },
     // options
-    // meow
+    offlineprogress: true,
     // statistics
     totalpoints: d(0),
     rolls: d(0),
     started: 0,
     lastsaved: 0,
     // gambling level
-    gamblinglevel: d(0)
+    gamblinglevel: d(0),
+    // luck stuff
+    luck: {
+      luck: d(0),
+      points: d(0),
+      lastsuccess: false,
+      lastroll: 0,
+    },
+    // the gwa is in
+    gwaed: false,
   }
   return a
 }
@@ -87,8 +101,8 @@ function load() {
         formatWhole,
       },
     }))
-  if(player.upgs[4].gte(1)) {
-    
+  if(player.upgs[4].gte(1) && (player.lasttick - Date.now()) >=30000) {
+    simulateOfflineProgress()
   }
   gameLoaded=true
 }
@@ -109,6 +123,10 @@ function exportSave() {
 
 function importSave(imported = undefined) {
   if (imported === undefined) imported = prompt("paste your save here")
+  if(imported == "gwa"){
+    player.gwaed = true
+    return
+  }
   player =JSON.parse(atob(imported))
   save()
   window.location.reload();

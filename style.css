@@ -105,9 +105,9 @@ button {
 
 .milecontainer {
   width: 60%;
-  height: 15em;
+  height: 50%;
   overflow-y: auto;
-  margin: auto;
+  margin: 0 20% 3% 20%
 }
 .milestone {
   min-height: 5em;
