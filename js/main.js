@@ -69,9 +69,9 @@ function checkTab(tab, subtab=undefined){
 function getMinRoll() {
   let a = D(1)
   a = a.add(upgs[3].eff())
+  if(miles[3].isOwned()) a=a.pow(1.3)
   // a dice cant have negative sides
   a = a.min(player.maxroll)
-  if(miles[3].isOwned()) a=a.pow(1.3)
   return a
 }
 function getMaxRoll() {
@@ -132,14 +132,14 @@ const upgs = {
     cap: D(100),
   },
   2: {
-    description() { return `x`+f(D(1.21).pow(miles[5].isOwned?2:1))+` to max roll`},
+    description() { return `x`+f(D(1.21).pow(miles[5].isOwned()?2:1))+` to max roll`},
     cost() {
       return D(10).mul(D(1.15).pow(D(1.15).pow(player.upgs[2].add(20)))).div(3)
       .div(upgCostMod())
     },
     effDis() {return f(upgs[2].eff())+"x"},
     unlocked() {return player.maxroll.gte(6) || player.unl.gambling},
-    eff() {return D(1.21).pow(miles[5].isOwned?2:1).pow(player.upgs[2])},
+    eff() {return D(1.21).pow(miles[5].isOwned()?2:1).pow(player.upgs[2])},
     curr: "points",
     cap: D(125),
   },
@@ -320,6 +320,7 @@ const miles = {
     isOwned() {return player.gamblinglevel.gte(8)}
   },
 }
+<<<<<<< HEAD
 
 function luckRoll(){
   let num = Math.random()
@@ -341,3 +342,5 @@ function getPointBoostFromLuck(){
   let eff = player.luck.points.add(1).log(2).pow(2).max(1)
   return eff
 }
+=======
+>>>>>>> 1c0cc85b4bca00fae0884a65a55d42e3ba876e0d
