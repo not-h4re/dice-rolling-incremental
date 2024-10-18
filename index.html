@@ -17,7 +17,7 @@
     <script src="js/customFormat.js" defer></script>
     <script src="libs/notify.js" defer></script>
     
-    <meta name="viewport" content="width=device-width, initial-scale=0.6">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
   <body>
     <div id="app">
@@ -28,9 +28,6 @@
       <!-- TABS -->
       <button class="tab" onclick="player.tab='main'">
         Main
-      </button>
-      <button class="tab" onclick="player.tab='stat'">
-        Statistics
       </button>
       <button v-if="player.unl.gambling" class="tab" onclick="tab('gambling', player.prevtab.gambling)">
         Gambling
@@ -61,30 +58,21 @@
         <span class="opt upgs">
           <span v-for="n in 5">
             <button :class="{upg: true, can: canAfford(n)}" @click="buyupg(n)" v-if="upgs[n].unlocked()">
-              ({{f(player.upgs[n], 0)}}/{{f(upgs[n].cap, 0)}})<br>
+              ({{f(player.upgs[n], 0)}}/{{f(upgs[n].cap(), 0)}})<br>
               {{upgs[n].description()}}<br>
               Currently: {{upgs[n].effDis()}}<br>
-              {{player.upgs[n].gte(upgs[n].cap)?"Maxed!":("Cost: "+f(upgs[n].cost())+" "+upgs[n].curr)}}
+              {{player.upgs[n].gte(upgs[n].cap())?"Maxed!":("Cost: "+f(upgs[n].cost())+" "+upgs[n].curr)}}
             </button>
           </span>
         </span>
         <span class="opt upgs">
           <button v-for="n in 4" :class="{upg: true, can: canAfford(n+5)}" @click="buyupg(n+5)" v-if="upgs[n+5].unlocked()">
-            ({{f(player.upgs[n+5], 0)}}/{{f(upgs[n+5].cap, 0)}})<br>
+            ({{f(player.upgs[n+5], 0)}}/{{f(upgs[n+5].cap(), 0)}})<br>
             {{upgs[n+5].description()}}<br>
             Currently: {{upgs[n+5].effDis()}}<br>
-            {{player.upgs[n+5].gte(upgs[n+5].cap)?"Maxed!":("Cost: "+f(upgs[n+5].cost())+" "+upgs[n+5].curr)}}
+            {{player.upgs[n+5].gte(upgs[n+5].cap())?"Maxed!":("Cost: "+f(upgs[n+5].cost())+" "+upgs[n+5].curr)}}
           </button>
         </span>
-      </div>
-      
-      <!-- STATISTICS -->
-      <div v-if="player.tab=='stat'">
-        <br>
-        <h3 class="inline">General</h3><br>
-        You have rolled a total of {{f(player.rolls)}} times<br>
-        You have made a total of {{f(player.totalpoints)}} points<br>
-        You have played for {{f((currentTime() - player.started)/1000)}} seconds<br>
       </div>
       
       <!-- GAMBLING :$ -->
@@ -104,7 +92,7 @@
         Reset all base features (points, point upgrades) to increase your gambling level by 1<br>
         Your gambling level multiplies point gain by {{format(gamblingLevelToPointMulti())}}<br>
         It also autobuys the first {{formatWhole(autoboughtUpgradesFromGamblingLevel())}} point upgrades<br>
-        There are also milestones accosiated with gambling level<br><br>
+        There are also milestones associated with gambling level<br><br>
         
         <button :class="{reset: true, can: canIncreaseGamblingLevel()}" onclick="increaseGamblingLevel()">
           The next gambling level requires {{format(gamblingLevelReq(player.gamblinglevel))}} points<br><br>
@@ -112,8 +100,8 @@
         </button>
         
         <div class="milecontainer">
-          <span v-for ="n in 7">
-            <div :class="{milestone: true, got: miles[n].isOwned()}">
+          <span v-for="n in 11">
+            <div :class="{milestone: true, got: miles[n].isOwned()}" v-if="miles[Math.max(0, n-4)].isOwned()">
               <h3 class="inline">
                 {{miles[n].name}}
               </h3><br>
@@ -125,15 +113,31 @@
 
       <div v-if="checkTab('gambling', 'luck')">
         <span v-if="player.gwaed == true">the gwa is in<br></span>
-        You have <span class="glowp">{{format(player.luck.luck, 0)}}</span> luck<br>
+        You have <span class="glowp">{{format(player.luck.luck, 7)}}</span> luck<br>
         You have <span class="glowp">{{format(player.luck.points)}}</span> luck points, multiplying point gain by <span class="glowp">{{format(getPointBoostFromLuck())}}</span><br>
-        Your luck generates {{format(luckPointGen())}} luck points/second<br>
-        The chance of increasing your luck next roll is {{format(luckIncreaseChance().mul(100))}}%<br>
+        Your luck generates {{format(luckPointGen(), 5)}} luck points/second<br>
+        You also have <span class="glowp">{{format(player.luck.unluck)}}</span> unluck, dividing gambling level requirement by {{format(unluckEffect())}}<br>
+        You gain {{format(unluckGain())}} unluck per roll that did not increase your luck<br>
+        Luck formula: log<sub>2</sub>(1/Math.random() * {{format(luckChanceMulti())}}) + 1<br>
         <br>
-        <button onclick="luckRoll()" class="rollbtn upg">
-          Click to roll<br>
-          The last roll was a {{player.luck.lastsuccess?"success":"failure" + "\n("+format(player.luck.lastroll, 7)+")"}}
-        </button>
+        <div class="opt upgs">
+          <button onclick="luckRoll()" class="rollbtn upg">
+            Click to roll<br>
+            The last roll had a result of {{format(player.luck.lastroll, 7)}}
+          </button>
+          <button onclick="player.luck.autoroll = !player.luck.autoroll" class="rollbtn upg">
+            Auto roll: {{player.luck.autoroll}}
+          </button>
+        </div>
+        <br><br>
+        <div class="opt upgs">
+          <button v-for="n in 4" :class="{upg: true, can: canAffordLuckUpg(n)}" @click="buyluckupg(n)" v-if="upgs.luck[n].unlocked && player.gamblinglevel.gte(11)">
+            ({{f(player.luck.upgs[n], 0)}})<br>
+            {{upgs.luck[n].description()}}<br>
+            Currently: {{upgs.luck[n].effDis()}}<br>
+            Cost: {{f(upgs.luck[n].cost())}} unluck
+          </button>
+        </div>
       </div>
       
       <!-- OPTIONS -->
@@ -156,7 +160,7 @@
             Reset all progress
           </button>
           <button class="option" onclick="player.offlineprogress = !player.offlineprogress">
-            Offline progress: {{player.offlineprogress}}
+            Cap tick length: {{!player.offlineprogress}}
           </button>
           <button class="option" onclick="player.gwaed = false" v-if="player.gwaed">
             Remove the gwa

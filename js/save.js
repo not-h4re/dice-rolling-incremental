@@ -23,10 +23,6 @@ function start(){
     },
     // options
     offlineprogress: true,
-    // statistics
-    totalpoints: d(0),
-    rolls: d(0),
-    started: 0,
     lastsaved: 0,
     // gambling level
     gamblinglevel: d(0),
@@ -36,6 +32,9 @@ function start(){
       points: d(0),
       lastsuccess: false,
       lastroll: 0,
+      unluck: d(0),
+      autoroll: false,
+      upgs: [null,d(0),d(0),d(0),d(0)],
     },
     // the gwa is in
     gwaed: false,
@@ -99,6 +98,7 @@ function load() {
         Decimal,
         format,
         formatWhole,
+        miles,
       },
     }))
   gameLoaded=true
