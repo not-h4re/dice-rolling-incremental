@@ -52,11 +52,22 @@ button {
   border: 2px solid #dddddd;
 }
 
-.glowp {
+.glow {
   display: inline;
   font-size: 23px;
   text-shadow: 0 0 10px;
+}
+.p {
   color: white;
+}
+.gl {
+  color: #910000;
+}
+.l {
+  color: #00bf16;
+}
+.pl {
+  color: #008da3;
 }
 
 .opt {

@@ -23,7 +23,7 @@
     <div id="app">
       
       <!-- POINT DISPLAY -->
-      You have <h2 class="glowp">{{f(player.points)}}</h2> points<br><br>
+      You have <h2 class="glow p">{{f(player.points)}}</h2> points<br><br>
       
       <!-- TABS -->
       <button class="tab" onclick="player.tab='main'">
@@ -32,9 +32,12 @@
       <button v-if="player.unl.gambling" class="tab" onclick="tab('gambling', player.prevtab.gambling)">
         Gambling
       </button>
+      <button v-if="player.unl.sacrifice" class="tab" onclick="player.tab='sacrifice'">
+        Sacrifice
+      </button>
       <button class="tab" onclick="player.tab='opt'">
         Options
-      </button><br>
+      </button><br><br>
       
       <!-- MAIN GAME-->
       <div v-if="player.tab=='main'">
@@ -56,14 +59,12 @@
         </button>
         <br><br>
         <span class="opt upgs">
-          <span v-for="n in 5">
-            <button :class="{upg: true, can: canAfford(n)}" @click="buyupg(n)" v-if="upgs[n].unlocked()">
-              ({{f(player.upgs[n], 0)}}/{{f(upgs[n].cap(), 0)}})<br>
-              {{upgs[n].description()}}<br>
-              Currently: {{upgs[n].effDis()}}<br>
-              {{player.upgs[n].gte(upgs[n].cap())?"Maxed!":("Cost: "+f(upgs[n].cost())+" "+upgs[n].curr)}}
-            </button>
-          </span>
+          <button :class="{upg: true, can: canAfford(n)}" @click="buyupg(n)" v-if="upgs[n].unlocked()" v-for="n in 5">
+            ({{f(player.upgs[n], 0)}}/{{f(upgs[n].cap(), 0)}})<br>
+            {{upgs[n].description()}}<br>
+            Currently: {{upgs[n].effDis()}}<br>
+            {{player.upgs[n].gte(upgs[n].cap())?"Maxed!":("Cost: "+f(upgs[n].cost())+" "+upgs[n].curr)}}
+          </button>
         </span>
         <span class="opt upgs">
           <button v-for="n in 4" :class="{upg: true, can: canAfford(n+5)}" @click="buyupg(n+5)" v-if="upgs[n+5].unlocked()">
@@ -77,17 +78,19 @@
       
       <!-- GAMBLING :$ -->
       <div v-if="checkTab('gambling')">
-        <br>
         <button class="tab" onclick="tab('gambling', 'main')">
           Main
         </button>
         <button class="tab" onclick="tab('gambling', 'luck')" v-if="miles[7].isOwned()">
           Luck
         </button>
+        <button class="tab" onclick="tab('gambling', 'pluck')" v-if="miles[12].isOwned()">
+          Prestige Luck
+        </button>
       </div>
 
       <div v-if="checkTab('gambling', 'main')">
-        Your gambling level is <h2 class="glowp">{{format(player.gamblinglevel, 0)}}</h2><br><br>
+        Your gambling level is <h2 class="glow gl">{{format(player.gamblinglevel, 0)}}</h2><br><br>
         
         Reset all base features (points, point upgrades) to increase your gambling level by 1<br>
         Your gambling level multiplies point gain by {{format(gamblingLevelToPointMulti())}}<br>
@@ -100,7 +103,7 @@
         </button>
         
         <div class="milecontainer">
-          <span v-for="n in 11">
+          <span v-for="n in 13">
             <div :class="{milestone: true, got: miles[n].isOwned()}" v-if="miles[Math.max(0, n-4)].isOwned()">
               <h3 class="inline">
                 {{miles[n].name}}
@@ -113,10 +116,10 @@
 
       <div v-if="checkTab('gambling', 'luck')">
         <span v-if="player.gwaed == true">the gwa is in<br></span>
-        You have <span class="glowp">{{format(player.luck.luck, 7)}}</span> luck<br>
-        You have <span class="glowp">{{format(player.luck.points)}}</span> luck points, multiplying point gain by <span class="glowp">{{format(getPointBoostFromLuck())}}</span><br>
+        You have <span class="glow l">{{format(player.luck.luck, 7)}}</span> luck<br>
+        You have <span class="glow l">{{format(player.luck.points)}}</span> luck points, multiplying point gain by <span class="glow l">{{format(getPointBoostFromLuck())}}</span><br>
         Your luck generates {{format(luckPointGen(), 5)}} luck points/second<br>
-        You also have <span class="glowp">{{format(player.luck.unluck)}}</span> unluck, dividing gambling level requirement by {{format(unluckEffect())}}<br>
+        You also have <span class="glow l">{{format(player.luck.unluck)}}</span> unluck, dividing gambling level requirement by {{format(unluckEffect())}}<br>
         You gain {{format(unluckGain())}} unluck per roll that did not increase your luck<br>
         Luck formula: log<sub>2</sub>(1/Math.random() * {{format(luckChanceMulti())}}) + 1<br>
         <br>
@@ -125,7 +128,7 @@
             Click to roll<br>
             The last roll had a result of {{format(player.luck.lastroll, 7)}}
           </button>
-          <button onclick="player.luck.autoroll = !player.luck.autoroll" class="rollbtn upg">
+          <button onclick="player.luck.autoroll = !player.luck.autoroll" class="rollbtn upg" v-if="miles[10].isOwned()">
             Auto roll: {{player.luck.autoroll}}
           </button>
         </div>
@@ -138,6 +141,35 @@
             Cost: {{f(upgs.luck[n].cost())}} unluck
           </button>
         </div>
+      </div>
+
+      <div v-if="checkTab('gambling', 'pluck')">
+        <span v-if="player.gwaed == true">the prestiged gwa is in<br></span>
+        Let the inflation begin.<br>
+        You have <span class="glow pl">{{f(player.luck.pluck, 7)}}</span><span v-if="player.luck.pluck.gte(100)"> (hardcapped)</span> prestige luck<br>
+        Your prestige luck multiplies unluck gain by <span class="glow pl">{{f(pluckEffect())}}</span><br>
+        <br>
+        Reset the base and luck features, except upgrades, to roll prestige luck<br>
+        You need to be gl{{formatWhole(player.luck.pluckinc.add(20))}} or above to reset<br>
+        This increases when you get a roll that increases your prestige luck<br>
+        Your prestige luck multiplier is <span class="glow pl">x{{f(pluckMult(), 7)}}</span><br>
+        (1.15<sup>gl - 20</sup> * 1.12<sup>luck - 10</sup> * (10<sup>-10</sup> + 1.01<sup>log<sub>1.11</sub>((unluck+1)/1e40)</sup>))<br>
+        <br>
+        <div class="opt upgs">
+          <button onclick="prestigeLuckReset()" :class="{reset: true, can: canPluckReset()}">
+            Click this button to reset<br>
+            Last roll: {{f(player.luck.plastroll)}}
+          </button>
+          <button class="reset can" onclick="pluckRespec()">
+            Reset prestige luck but reset the gambling level requirement; this also does a prestige luck reset and resets luck upgrades
+          </button>
+        </div>
+      </div>
+
+      <!-- i need to go further.. 
+       SACRIFICE -->
+      <div v-if="player.tab=='sacrifice'">
+        Sacrifice everything before this point in exchange for 0 undefined :trol:
       </div>
       
       <!-- OPTIONS -->
@@ -156,6 +188,8 @@
             </button><br>
             <input id="importbox" class="optioninput">
           </div>
+        </div>
+        <div class="opt">
           <button class="option" onclick="hardReset()">
             Reset all progress
           </button>

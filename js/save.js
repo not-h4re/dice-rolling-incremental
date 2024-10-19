@@ -20,6 +20,7 @@ function start(){
     upgs: [null,d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0)],
     unl: {
       gambling: false,
+      sacrifice: false,
     },
     // options
     offlineprogress: true,
@@ -35,6 +36,9 @@ function start(){
       unluck: d(0),
       autoroll: false,
       upgs: [null,d(0),d(0),d(0),d(0)],
+      pluck: D(0),
+      plastroll: D(0),
+      pluckinc: D(0)
     },
     // the gwa is in
     gwaed: false,
@@ -99,6 +103,7 @@ function load() {
         format,
         formatWhole,
         miles,
+        f,
       },
     }))
   gameLoaded=true

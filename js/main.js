@@ -5,6 +5,7 @@ function update(diff, isoffline=false) {
   player.minroll = getMinRoll()
   player.maxroll = getMaxRoll()
   if(player.points.gte(1e11)) player.unl.gambling = true
+  if(miles[13].isOwned()) player.unl.sacrifice = true
   if(player.started==0){
     player.started=Date.now()
     player.lasttick=Date.now()/1000
@@ -211,7 +212,7 @@ const upgs = {
       return D(1e4).mul(D(1e3).pow(player.upgs[8])).div(upgCostMod()).pow(miles[9].isOwned()?0.5:1)
     },
     effDis() {return f(upgs[8].eff())+"x"},
-    eff() {return player.upgs[8].gte(1)?player.points.root(3.33 - (miles[3].isOwned()?1:0)).pow(D(0.03).mul(player.upgs[8]).add(0.3)):D(1)},
+    eff() {let eff = player.upgs[8].gte(1)?player.points.root(3.33 - (miles[3].isOwned()?1:0)).pow(D(0.03).mul(player.upgs[8]).add(0.3)):D(1); return eff.min("1e350")},
     unlocked() {return (player.maxroll.gte(900) && player.minroll.gte(800)) || player.unl.gambling},
     curr: "points",
     cap() {return D(10).add(upgs.luck[3].eff())},
@@ -255,10 +256,11 @@ const upgs = {
       description() {return `Add 1 to the gambling level 10 effect base`},
       cost() {
         if(player.luck.upgs[4].lt(1)) return D(1e14)
+        else if(player.luck.upgs[4].lt(2)) return D(1e96)
         else return Infinity
       },
-      eff() {return player.luck.upgs[4].min(1)},
-      effDis() {return "+1"},
+      eff() {return player.luck.upgs[4].min(2)},
+      effDis() {return "+"+f(upgs.luck[4].eff())},
       curr: "unluck",
       unlocked: true,
     }
@@ -291,8 +293,12 @@ function gamblingLevelReq(x){
   else if(x.gte(4) && x.lte(8)) req = Decimal.pow(10, x.mul(4).add(8))
   // point req = 10^(5x+5) for 8 < x < 19
   else if(x.gt(8) && x.lt(19)) req = Decimal.pow(10, x.mul(5))
-  // point req = 10^(10x-87) for x >= 19
-  else req = Decimal.pow(10, x.mul(10).sub(87.5))
+  // point req = 10^103 for x = 19
+  else if(x == d(19)) req = Decimal.pow(10, 103)
+  // point req = 10^(T(x)/2 + 8) for 19 < x < 25
+  else if(x.gt(19) && x.lt(25)) req = Decimal.pow(10, x.mul(x).add(x).div(4).add(8))
+  // point req = 2^(1300 + 512(x-25)) for x >= 25
+  else req = Decimal.pow(2, x.sub(25).mul(d(250).add(x.sub(26).min(1).mul(250))).add(1300))
 
   req = req.div(unluckEffect())
   return req
@@ -377,7 +383,7 @@ const miles = {
   },
   9: {
     name: "Gambling Level 10",
-    effect: "Automatically roll once after gambling level reset. Unluck gain is multiplied by 100 and tripled for every OoM of unluck. Upgrade costs are square rooted",
+    effect: "Automatically roll once after gambling level reset. Unluck gain is multiplied by 100 and tripled for every OoM of unluck, hardcapping at 100 OoMs. Upgrade costs are square rooted",
     isOwned() {return player.gamblinglevel.gte(10)}
   },
   10: {
@@ -389,7 +395,17 @@ const miles = {
     name: "Gambling Level 12",
     effect: "Multiply unluck gain by 6 per gambling level starting at 12",
     isOwned() {return player.gamblinglevel.gte(12)}
-  }
+  },
+  12: {
+    name: "Gambling Level 20",
+    effect: "Unlock prestige luck",
+    isOwned() {return player.gamblinglevel.gte(20)}
+  },
+  13: {
+    name: "Gambling Level 27",
+    effect: "Unlock sacrifice",
+    isOwned() {return player.gamblinglevel.gte(27)},
+  },
 }
 
 function luckRoll(){
@@ -418,8 +434,48 @@ function unluckEffect(){
 }
 function unluckGain(){
   let x = d(1)
-  if(miles[9].isOwned()) x=x.mul(100).mul(player.luck.unluck.max(1).log(10).floor().pow_base(d(3).add(upgs.luck[4].eff())))
+  if(miles[9].isOwned()) x=x.mul(100).mul(player.luck.unluck.max(1).log(10).floor().min(100).pow_base(d(3).add(upgs.luck[4].eff())))
   if(miles[11].isOwned()) x=x.mul(Decimal.pow(6, player.gamblinglevel.sub(11)))
   x = x.mul(upgs.luck[2].eff())
+  x = x.mul(pluckEffect())
   return x
+}
+
+function resetLuck(){
+  player.luck.luck = d(0)
+  player.luck.points = d(0)
+  player.luck.unluck = d(0)
+}
+function prestigeLuckReset(){
+  let mult = pluckMult()
+
+  let pluck = d(Math.random()).recip().mul(mult).add(1).log(1.3).add(1)
+
+  if(pluck.gt(player.luck.pluck)) player.luck.pluckinc = player.luck.pluckinc.add(1)
+  player.luck.pluck = Decimal.max(player.luck.pluck, pluck).min(100)
+  player.luck.plastroll = pluck
+  resetLuck()
+  resetBaseGame()
+}
+function pluckEffect() {
+  // multiplies unluck gain
+  return Decimal.pow(2.2, player.luck.pluck.pow(1.1))
+}
+function pluckMult(){
+  // luck multiplier formula = 1.15^(gl-20) * 1.12^(luck-10) * min(10^-10, 1.03^log[1.11, (unluck+1)/1e40])
+  let mult = Decimal.pow(1.15, player.gamblinglevel.sub(20))
+  mult = mult.mul(Decimal.pow(1.12, player.luck.luck - 10))
+  mult = mult.mul(Decimal.pow(1.01, player.luck.unluck.add(1).div(1e40).log(1.11).add(0.0000000001)))
+
+  return mult
+}
+function canPluckReset(){
+  return player.gamblinglevel.gte(player.luck.pluckinc.add(20))
+}
+function pluckRespec(){
+  player.luck.upgs = [null, d(0),d(0),d(0),d(0)]
+  resetLuck()
+  resetBaseGame()
+  player.luck.pluck = d(0)
+  player.luck.pluckinc = d(0)
 }
