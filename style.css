@@ -12,6 +12,9 @@ button {
   touch-action: manipulation;
   z-index: 1;
 }
+h2 {
+  display: inline;
+}
 
 .option {
   background-color: #030303;
