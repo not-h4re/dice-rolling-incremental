@@ -294,7 +294,7 @@ function gamblingLevelReq(x){
   // point req = 10^(5x+5) for 8 < x < 19
   else if(x.gt(8) && x.lt(19)) req = Decimal.pow(10, x.mul(5))
   // point req = 10^103 for x = 19
-  else if(x == d(19)) req = Decimal.pow(10, 103)
+  else if(x.eq(d(19))) req = Decimal.pow(10, 103)
   // point req = 10^(T(x)/2 + 8) for 19 < x < 25
   else if(x.gt(19) && x.lt(25)) req = Decimal.pow(10, x.mul(x).add(x).div(4).add(8))
   // point req = 2^(1300 + 512(x-25)) for x >= 25
