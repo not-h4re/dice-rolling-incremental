@@ -9,11 +9,13 @@ function start(){
     subtab: "none",
     prevtab: {
       gambling: "main",
+      sacrifice: "main"
     },
     // other
     lasttick: 0,
     // Base game
     points: d(0),
+    bestpoints: d(0),
     minroll: d(0),
     maxroll: d(1),
     result: d(0),
@@ -39,6 +41,16 @@ function start(){
       pluck: D(0),
       plastroll: D(0),
       pluckinc: D(0)
+    },
+    // sacrifice things
+    sac: {
+      voidessence: D(0),
+      totalve: D(0),
+      resets: 0,
+      blessings: [],
+      totalofferings: D(0),
+      spentofferings: D(0),
+      offerings: d(0),
     },
     // the gwa is in
     gwaed: false,

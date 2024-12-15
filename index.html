@@ -16,6 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/break_eternity.js@2.1.0/dist/break_eternity.min.js"></script>
     <script src="js/customFormat.js" defer></script>
     <script src="libs/notify.js" defer></script>
+    <script src="js/sacrifice.js" defer></script>
     
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
@@ -32,7 +33,7 @@
       <button v-if="player.unl.gambling" class="tab" onclick="tab('gambling', player.prevtab.gambling)">
         Gambling
       </button>
-      <button v-if="player.unl.sacrifice" class="tab" onclick="player.tab='sacrifice'">
+      <button v-if="player.unl.sacrifice" class="tab" onclick="tab('sacrifice', player.prevtab.sacrifice)">
         Sacrifice
       </button>
       <button class="tab" onclick="player.tab='opt'">
@@ -73,6 +74,9 @@
             Currently: {{upgs[n+5].effDis()}}<br>
             {{player.upgs[n+5].gte(upgs[n+5].cap())?"Maxed!":("Cost: "+f(upgs[n+5].cost())+" "+upgs[n+5].curr)}}
           </button>
+          <button v-if="miles.void[1].isOwned()" onclick="buyAllUpgrades(5)" class="upg">
+            Attempts to buy at most 5 of each upgrade
+          </button>
         </span>
       </div>
       
@@ -90,20 +94,20 @@
       </div>
 
       <div v-if="checkTab('gambling', 'main')">
-        Your gambling level is <h2 class="glow gl">{{format(player.gamblinglevel, 0)}}</h2><br><br>
+        Your g<span v-if="player.gwaed==true">w</span>ambling level is <h2 class="glow gl">{{format(player.gamblinglevel, 0)}}</h2><br><br>
         
-        Reset all base features (points, point upgrades) to increase your gambling level by 1<br>
-        Your gambling level multiplies point gain by {{format(gamblingLevelToPointMulti())}}<br>
+        Reset all base features (points, point upgrades) to increase your g<span v-if="player.gwaed==true">w</span>ambling level by 1<br>
+        Your g<span v-if="player.gwaed==true">w</span>ambling level multiplies point gain by {{format(gamblingLevelToPointMulti())}}<br>
         It also autobuys the first {{formatWhole(autoboughtUpgradesFromGamblingLevel())}} point upgrades<br>
-        There are also milestones associated with gambling level<br><br>
+        There are also milestones associated with g<span v-if="player.gwaed==true">w</span>ambling level<br><br>
         
         <button :class="{reset: true, can: canIncreaseGamblingLevel()}" onclick="increaseGamblingLevel()">
-          The next gambling level requires {{format(gamblingLevelReq(player.gamblinglevel))}} points<br><br>
+          The next g<span v-if="player.gwaed==true">w</span>ambling level requires {{format(gamblingLevelReq(player.gamblinglevel))}} points<br><br>
           Click this button to reset
         </button>
         
         <div class="milecontainer">
-          <span v-for="n in 13">
+          <span v-for="n in 14">
             <div :class="{milestone: true, got: miles[n].isOwned()}" v-if="miles[Math.max(0, n-4)].isOwned()">
               <h3 class="inline">
                 {{miles[n].name}}
@@ -140,13 +144,16 @@
             Currently: {{upgs.luck[n].effDis()}}<br>
             Cost: {{f(upgs.luck[n].cost())}} unluck
           </button>
+          <button v-if="miles.void[1].isOwned()" onclick="buyAllLuckUpgrades(5)" class="upg">
+            Attempts to buy at most 5 of each upgrade
+          </button>
         </div>
       </div>
 
       <div v-if="checkTab('gambling', 'pluck')">
         <span v-if="player.gwaed == true">the prestiged gwa is in<br></span>
         Let the inflation begin.<br>
-        You have <span class="glow pl">{{f(player.luck.pluck, 7)}}</span><span v-if="player.luck.pluck.gte(100)"> (hardcapped)</span> prestige luck<br>
+        You have <span class="glow pl">{{f(player.luck.pluck, 7)}}</span><span v-if="player.luck.pluck.gte(pluckCap())"> (hardcapped)</span> prestige luck<br>
         Your prestige luck multiplies unluck gain by <span class="glow pl">{{f(pluckEffect())}}</span><br>
         <br>
         Reset the base and luck features, except upgrades, to roll prestige luck<br>
@@ -161,15 +168,86 @@
             Last roll: {{f(player.luck.plastroll)}}
           </button>
           <button class="reset can" onclick="pluckRespec()">
-            Reset prestige luck but reset the gambling level requirement; this also does a prestige luck reset and resets luck upgrades
+            Reset prestige luck but reset the gambling level requirement; this also does a prestige luck reset
           </button>
         </div>
       </div>
 
-      <!-- i need to go further.. 
-       SACRIFICE -->
+      <!-- layer 3 -->
       <div v-if="player.tab=='sacrifice'">
-        Sacrifice everything before this point in exchange for 0 undefined :trol:
+        <button class="tab" onclick="tab('sacrifice', 'main')">
+          Main
+        </button>
+        <button class="tab" onclick="tab('sacrifice', 'blessings')">
+          Blessings
+        </button>
+        <button class="tab" onclick="tab('sacrifice', 'favor')">
+          Favor
+        </button>
+        <button class="tab" onclick="tab('sacrifice', 'offering')" v-if="miles.void[5].isOwned()">
+          Offerings
+        </button>
+      </div>
+      <div v-if="checkTab('sacrifice', 'main')">
+        <span v-if="player.gwaed==true">the voidgwa is in<br></span>
+        You have <span class="glow s">{{format(player.sac.voidessence)}}</span> void essence ({{f(player.sac.totalve)}} total)<br>
+        <br>
+        Sacrifice everything before this point to the void for void essence<br>
+        void essence can be spent on blessings and probably more stuff later<br>
+        Gambling Level 27 is required to reset<br>
+        <br>
+        <button :class="{reset: true, can: miles[13].isOwned()}" onclick="sacrificeReset()">
+          Sacrifice for +{{f(voidEssenceGain())}} void essence<br>
+          <span v-if="player.sac.resets == 0">Your first reset always gives you 4 void essence</span><br>
+          (base gain = 2<sup>sqrt(gl - 26)</sup>)
+        </button>
+      </div>
+      <div v-if="checkTab('sacrifice','blessings')">
+        You have <span class="glow s">{{format(player.sac.voidessence)}}</span> void essence<br>
+        Each blessing requires the one above it to be purchased before you can buy it<br>
+        <br>
+        <span v-for="i in 4" class="opt upgs">
+          <button v-for="j in 5" :class="{upg: true, can: canAffordBlessing((i*10)+j), voidowned: player.sac.blessings.includes((10*i)+j)}" @click="buyBlessing((i*10)+j)" :v-if="i==4 ? miles.offering[3].isOwned() : true">
+            <b>{{blessings[(i*10)+j].title}}</b><br>
+            {{blessings[(i*10)+j].description}}<br>
+            Cost: {{formatWhole(blessings[(i*10)+j].cost())}} void essence
+          </button>
+        </span>
+      </div>
+      <div v-if="checkTab('sacrifice', 'favor')">
+        You have <span class="glow s">{{formatWhole(voidFavorLevel())}}</span> void favor<br>
+        Next void favor: <span class="glow s">{{f(player.sac.totalve)}}/{{f(voidFavorReq())}}</span> total void essence<br>
+        <br>
+        <div class="milecontainer">
+          <span v-for="n in 8">
+            <div :class="{milestone: true, voidunowned: !miles.void[n].isOwned(), voidowned: miles.void[n].isOwned()}">
+              <h3 class="inline">
+                {{miles.void[n].name}}
+              </h3><br>
+              {{miles.void[n].effect}}
+            </div>
+          </span>
+        </div>
+      </div>
+      <div v-if="checkTab('sacrifice', 'offering')">
+        You have <span class="glow s">{{formatWhole(player.sac.offerings)}}</span> offerings (<span class="glow s">{{formatWhole(player.sac.totalofferings)}}</span> total)<br>
+        The next offering will be obtained at <span class="glow s">{{format(offeringReq(player.sac.totalofferings.add(1)))}}</span> points<br>
+        You have sacrificed <span class="glow s">{{formatWhole(player.sac.spentofferings)}}</span> offerings<br>
+        <br>
+        <button class="reset" onclick="spendOffering()">
+          Sacrifice an offering to the void
+        </button><br>
+        <br>
+        <div class="milecontainer">
+          <span v-for="n in 4">
+            <div :class="{milestone: true, voidunowned: !miles.offering[n].isOwned(), voidowned: miles.offering[n].isOwned()}">
+              <h3 class="inline">
+                {{miles.offering[n].name}}
+              </h3><br>
+              {{miles.offering[n].effect}}
+            </div>
+          </span>
+        </div>
       </div>
       
       <!-- OPTIONS -->
@@ -203,7 +281,8 @@
           TODO make importbox modal
           also make option buttons be 3/row
           -->
-        </div>
+        </div><br>
+        You are playing dice rolling incremental v0.2 - void sacrifices<br>
       </div>
     </div>
   </body>

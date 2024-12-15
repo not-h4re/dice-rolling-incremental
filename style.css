@@ -72,6 +72,9 @@ h2 {
 .pl {
   color: #008da3;
 }
+.s {
+  color: #4f4f4f;
+}
 
 .opt {
   display: flex;
@@ -86,6 +89,7 @@ h2 {
   background-color: #111111;
   color: white;
   touch-action: manipulation;
+  transition: .3s
 }
 .reset {
   min-height: 125px;
@@ -101,6 +105,7 @@ h2 {
   background-color: #004400;
   color: white;
   transition: .3s;
+  z-index: 9999;
 }
 .can:hover {
   transform: scale(1.15)
@@ -111,7 +116,8 @@ h2 {
   transition: .3s;
 }
 .rollbtn:hover {
-  transform: scale(1.15)
+  transform: scale(1.15);
+  z-index: 9999;
 }
 .inline {
   display: inline;
@@ -130,7 +136,16 @@ h2 {
   background-color: #e01600;
   border-radius: 5px;
   margin-bottom: 2px;
+  transition: .3s
 }
 .got {
   background-color: #004400;
+}
+.voidowned {
+  background-color: #9c9c9c;
+  color: black;
+  transition: .7s;
+}
+.voidunowned {
+  background-color: #000000;
 }
