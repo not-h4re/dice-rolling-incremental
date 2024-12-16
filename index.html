@@ -78,6 +78,14 @@
             Attempts to buy at most 5 of each upgrade
           </button>
         </span>
+        <span class="opt upgs">
+          <button :class="{upg: true, can: canAfford(n+10)}" @click="buyupg(n+10)" v-if="upgs[n+10].unlocked()" v-for="n in 2">
+            ({{f(player.upgs[n+10], 0)}}/{{f(upgs[n+10].cap(), 0)}})<br>
+            {{upgs[n+10].description()}}<br>
+            Currently: {{upgs[n+10].effDis()}}<br>
+            {{player.upgs[n+10].gte(upgs[n+10].cap())?"Maxed!":("Cost: "+f(upgs[n+10].cost())+" "+upgs[n+10].curr)}}
+          </button>
+        </span>
       </div>
       
       <!-- GAMBLING :$ -->
@@ -107,7 +115,7 @@
         </button>
         
         <div class="milecontainer">
-          <span v-for="n in 14">
+          <span v-for="n in 15">
             <div :class="{milestone: true, got: miles[n].isOwned()}" v-if="miles[Math.max(0, n-4)].isOwned()">
               <h3 class="inline">
                 {{miles[n].name}}
@@ -196,7 +204,7 @@
         void essence can be spent on blessings and probably more stuff later<br>
         Gambling Level 27 is required to reset<br>
         <br>
-        <button :class="{reset: true, can: miles[13].isOwned()}" onclick="sacrificeReset()">
+        <button :class="{reset: true, can: miles[13].isOwned()}" onclick="sacrificeReset()" @mousedown="">
           Sacrifice for +{{f(voidEssenceGain())}} void essence<br>
           <span v-if="player.sac.resets == 0">Your first reset always gives you 4 void essence</span><br>
           (base gain = 2<sup>sqrt(gl - 26)</sup>)
@@ -219,7 +227,7 @@
         Next void favor: <span class="glow s">{{f(player.sac.totalve)}}/{{f(voidFavorReq())}}</span> total void essence<br>
         <br>
         <div class="milecontainer">
-          <span v-for="n in 8">
+          <span v-for="n in 9">
             <div :class="{milestone: true, voidunowned: !miles.void[n].isOwned(), voidowned: miles.void[n].isOwned()}">
               <h3 class="inline">
                 {{miles.void[n].name}}

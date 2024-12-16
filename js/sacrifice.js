@@ -1,6 +1,6 @@
 function voidEssenceGain(){
   // base gain = 2^(sqrt(gambling level - 26))
-  let gain = Decimal.pow(2, player.gamblinglevel.sub(26).max(1).sqrt())
+  let gain = Decimal.pow(2, player.gamblinglevel.sub(26 * (hasBlessing(45)?-1:1)).max(1).sqrt())
   if(player.sac.resets == 0) gain = d(4)
 
   if(hasBlessing(15)) gain=gain.mul(2)
@@ -29,7 +29,7 @@ function sacrificeReset(force=false){
   player.luck.autoroll = false
 
   if(miles.void[6].isOwned()){
-    player.upgs=[null,d(250),d(250),d(250),d(250),d(250),d(250),d(250),d(100),d(250)]
+    player.upgs=[null,d(250),d(250),d(250),d(250),d(250),d(250),d(250),d(100),d(250),null,d(0),d(0),d(0),d(0),d(0)]
     player.luck.pluck = d(250)
     player.luck.autoroll = true
   }
@@ -137,8 +137,8 @@ const blessings = {
   },
   45: {
     title: "void Blessing IV",
-    description: "Remove the -26 in void essence gain formula",
-    cost() {return D(1e99)}
+    description: "Add 52 to the number in the sqrt in void essence formula",
+    cost() {return D(1e8)}
   }
 }
 

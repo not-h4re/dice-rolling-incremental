@@ -114,10 +114,13 @@ function pointMul() {
   if(miles[2].isOwned()) m=m.mul(Decimal.pow(2, player.gamblinglevel))
   m=m.mul(getPointBoostFromLuck())
   m=m.mul(upgs.luck[1].eff())
+  if(miles.void[8].isOwned()) m=m.mul(miles.void[8].eff())
   if(hasBlessing(11)) m=m.pow(1.2)
   if(hasBlessing(21)) m=m.pow(1.16)
   if(hasBlessing(31)) m=m.pow(1.15)
   if(hasBlessing(41)) m=m.pow(1.12)
+  if(miles[15].isOwned()) m=m.pow(1.5)
+  if(miles.void[9].isOwned()) m=m.pow(1.3)
   return m
 }
 function rollnum() {
@@ -264,6 +267,24 @@ const upgs = {
     curr: "points",
     cap() {return miles.offering[2].isOwned()?d(1000):D(10)},
   },
+  11: {
+    description() {return `Add 0.01 to the luck point gain base`},
+    cost() {return Decimal.pow(10,10500).mul(Decimal.pow("1e250", player.upgs[11].pow(1.4)))},
+    eff() {return player.upgs[11].mul(0.01)},
+    effDis() {return "+"+format(this.eff(), 2)},
+    unlocked() {return miles.offering[4].isOwned()},
+    cap() {return D(35)},
+    curr: "points"
+  },
+  12: {
+    description() {return `The unluck effect becomes unluck^(1.9+0.1x)`},
+    cost() {return Decimal.pow(10,12500).mul(Decimal.pow("1e1000", player.upgs[12].pow(1.3)))},
+    eff() {return player.upgs[12].mul(0.1).add(1.9)},
+    effDis() {return "x^"+format(this.eff())},
+    unlocked() {return miles.offering[4].isOwned()},
+    cap() {return D(81)},
+    curr: "points"
+  },
 
   luck: {
     1: {
@@ -343,11 +364,14 @@ function gamblingLevelReq(x){
   else req = Decimal.pow(10, rx.mul(200).sub(13600))
 
   req = req.div(unluckEffect())
-  if(hasBlessing(12)) req=req.pow(8/9)
-  if(hasBlessing(22)) req=req.pow(8/9)
-  if(hasBlessing(42)) req=req.pow(0.5)
-  if(miles.offering[1].isOwned()) req=req.pow(1.5)
-  if(miles.offering[2].isOwned()) req=req.pow(1.4)
+  if(!miles.void[9].isOwned()){
+    if(hasBlessing(12)) req=req.pow(8/9)
+    if(hasBlessing(22)) req=req.pow(8/9)
+    if(hasBlessing(42)) req=req.pow(0.5)
+    if(miles[15].isOwned()) req=req.pow(0.8)
+    if(miles.offering[1].isOwned()) req=req.pow(1.5)
+    if(miles.offering[2].isOwned()) req=req.pow(1.4)
+  }
   return req
 }
 function canIncreaseGamblingLevel(){
@@ -362,7 +386,8 @@ function increaseGamblingLevel(){
   if(!miles.void[6].isOwned()) resetBaseGame()
   
   // increase gambling level
-  player.gamblinglevel = player.gamblinglevel.add(1)
+  if(miles.void[9].isOwned()) player.gamblinglevel = getMaxGamblingLevel()
+  else player.gamblinglevel = player.gamblinglevel.add(1)
 
   // gl10 QoL
   if(miles[9].isOwned()) roll()
@@ -375,13 +400,18 @@ function gamblingLevelToPointMulti(){
 function autoboughtUpgradesFromGamblingLevel(){
   return Decimal.min(player.gamblinglevel, 9)
 }
+function getMaxGamblingLevel(){
+  // (log10(pu)+13600)/200 = x
+  let x = Decimal.max(player.points.mul(unluckEffect()).log10().add(13600).div(200).floor().add(1), player.gamblinglevel)
+  return x
+}
 
 function resetBaseGame(){
   player.points = d(0)
   player.minroll = d(0)
   player.maxroll = d(1)
   player.result = d(0)
-  if(!miles[10].isOwned()) player.upgs = [null,d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0)]
+  if(!miles[10].isOwned()) player.upgs = [null,d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),null,d(0),d(0),d(0),d(0),d(0)]
 }
 
 const miles = {
@@ -458,6 +488,11 @@ const miles = {
     effect: "Increase void essence gain by +50% and x1.1 per gambling level starting at 60 and ending at 80",
     isOwned() {return player.gamblinglevel.gte(60)},
   },
+  15: {
+    name: "Gambling Level 150",
+    effect: "^1.5 point gain, ^0.8 gambling level requirement",
+    isOwned() {return player.gamblinglevel.gte(150)}
+  },
   void: {
     1: {
       name: "1 void favor",
@@ -471,7 +506,7 @@ const miles = {
     },
     3: {
       name: "3 void favor",
-      effect: "Autobuy the other 4 point upgrades. Upgrade 8s hardcap becomes a softcap, but hardcap luck upgrade 3s effect at +90. Total void essence multiplies luck chances and adds to prestige luck hardcap (this effect caps at +145)",
+      effect: "Autobuy the next 4 point upgrades. Upgrade 8s hardcap becomes a softcap, but hardcap luck upgrade 3s effect at +90. Total void essence multiplies luck chances and adds to prestige luck hardcap (this effect caps at +145)",
       isOwned() {return voidFavorLevel().gte(3)}
     },
     4: {
@@ -486,7 +521,7 @@ const miles = {
     },
     6: {
       name: "10 void favor",
-      effect: "Gambling level automatically updates without resetting anything. Start with 250 of each regular upgrade (100 for 8) and 250 prestige luck after void resets. Auto roll no longer resets",
+      effect: "Gambling level automatically updates without resetting anything. Start with 250 of point upgrades 1-7 and 9 (100 for 8) and 250 prestige luck after void resets. Auto roll no longer resets",
       isOwned() {return voidFavorLevel().gte(10)},
     },
     7: {
@@ -496,8 +531,14 @@ const miles = {
     },
     8: {
       name: "14 void favor",
-      effect: "Start at gambling level 100",
-      isOwned() {return voidFavorLevel().gte(14)}
+      effect: "Start at gambling level 100. Point gain is boosted based on total void essence and void favor (total ve^min(125, 5*vf) + 1)",
+      isOwned() {return voidFavorLevel().gte(14)},
+      eff() {return player.sac.totalve.pow(voidFavorLevel().mul(5).min(125).max(1)).add(1)}
+    },
+    9: {
+      name: "18 void favor",
+      effect: "^1.3 point gain, but all effects raising gambling level requirement to a power become ineffective. You can buy max gambling level",
+      isOwned() {return voidFavorLevel().gte(18)},
     }
   },
   offering: {
@@ -508,7 +549,7 @@ const miles = {
     },
     2: {
       name: "2 sacrificed offerings",
-      effect: "Raise gambling level requirement to 1.4. Add 60 to the luck upgrade 3 cap and increase all regular upgrades cap, except upgrade 8, to 1000",
+      effect: "Raise gambling level requirement to 1.4. Add 60 to the luck upgrade 3 cap and increase point upgrades 1-7 and 9 cap to 1000",
       isOwned() {return player.sac.spentofferings.gte(2)}
     },
     3: {
@@ -518,7 +559,7 @@ const miles = {
     },
     4: {
       name: "5 sacrificed offerings",
-      effect: "Unlock 5 new regular upgrades. This will be added later",
+      effect: "Unlock 2 new point upgrades",
       isOwned() {return player.sac.spentofferings.gte(5)}
     }
   }
@@ -533,7 +574,7 @@ function luckRoll(){
   player.luck.lastroll = base
 }
 function luckPointGen(){
-  let gen = player.luck.luck.mul(Decimal.pow(1.25, player.luck.luck))
+  let gen = player.luck.luck.mul(Decimal.pow(upgs[11].eff().add(1.25), player.luck.luck))
   return gen
 }
 function getPointBoostFromLuck(){
@@ -552,7 +593,8 @@ function luckChanceMulti(){
   return x
 }
 function unluckEffect(){
-  return player.luck.unluck.add(1).log(1.1).pow(miles[8].isOwned()?(d(0.9).add(player.gamblinglevel.min(20).sub(7).mul(0.5).min(4.1))):0.9).add(1)
+  if(player.upgs[12].lt(1)) return player.luck.unluck.add(1).log(1.1).pow(miles[8].isOwned()?(d(0.9).add(player.gamblinglevel.min(20).sub(7).mul(0.5).min(4.1))):0.9).add(1)
+  else return player.luck.unluck.add(1).pow(upgs[12].eff())
 }
 function unluckGain(){
   let x = d(1)

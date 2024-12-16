@@ -19,7 +19,7 @@ function start(){
     minroll: d(0),
     maxroll: d(1),
     result: d(0),
-    upgs: [null,d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0)],
+    upgs: [null,d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),null,d(0),d(0),d(0),d(0),d(0)],
     unl: {
       gambling: false,
       sacrifice: false,
