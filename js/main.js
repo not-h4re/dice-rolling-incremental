@@ -54,10 +54,11 @@ function update(diff, isoffline=false) {
   }
 
   if(miles.void[6].isOwned()){increaseGamblingLevel()}
+  detectNaNs()
 }
 
 setInterval(function() {
-  if(gameLoaded){
+  if(gameLoaded && !hasNaN){
     let diff = (Date.now()/1000) - player.lasttick
     if(!player.offlineprogress) diff = Math.min(diff, 1)
     //console.log(diff)
@@ -65,6 +66,11 @@ setInterval(function() {
     player.lasttick = Date.now()/1000
   }
   player.lasttick = Date.now()/1000
+  if(hasNaN && !NaNalerted){
+    alert("there is a NaN. refresh to revert to an older save. you may lose a small amount of progress")
+    NaNalerted = true
+    player.needsBackup = true
+  }
 }, 50)
 
 function D(x) {
@@ -673,5 +679,34 @@ function buyAllLuckUpgrades(bulk=1){
     buyluckupg(2)
     buyluckupg(3)
     buyluckupg(4)
+  }
+}
+
+
+
+
+
+function isObject(x){
+  return typeof x === 'object' && x !== null && !Array.isArray(x)
+}
+function detectNaNs(){
+  checkNaN(player)
+  checkNaN(player.sac)
+  checkNaN(player.luck)
+  checkNaN(upgs)
+  checkNaN(upgs.luck)
+  checkNaN(miles)
+  checkNaN(miles.gambling)
+  checkNaN(miles.void)
+  checkNaN(miles.offering)
+  checkNaN(blessings)
+}
+function checkNaN(thing){
+  if(isObject(thing)){
+    let data = Object.values(thing)
+    if(data.includes(NaN)) hasNaN = true
+  } else {
+    if(Number.isNaN(thing)) hasNaN=true
+    if(thing == Decimal.dNaN) hasNaN=true
   }
 }

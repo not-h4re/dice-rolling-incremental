@@ -1,5 +1,7 @@
 var player={}
 gameLoaded = false
+hasNaN = false
+NaNalerted = false
 // "gameLoaded is not defined" mf thats why i'm defining it
 
 function start(){
@@ -54,11 +56,13 @@ function start(){
     },
     // the gwa is in
     gwaed: false,
+    needsBackup: true
   }
   return a
 }
 function save(){
-  localStorage.setItem("dice rolling incremental save",btoa(JSON.stringify(player)))
+  if(!hasNaN) localStorage.setItem("dice rolling incremental save",btoa(JSON.stringify(player)))
+  else player.backup = btoa(JSON.stringify(player))
   //$.notify('Saved game', 'success')
   player.lastsaved  = Date.now()
 }
@@ -115,13 +119,25 @@ function load() {
         format,
         formatWhole,
         miles,
+        upgs,
         f,
       },
     }))
   gameLoaded=true
+  if(player.needsBackup){
+    get = localStorage.getItem("dice rolling incremental backup")
+    if (get === null || get === undefined) {
+      player = start();
+    } else {
+      importSave(get)
+    }
+  }
 }
 
 setInterval(function () {save()}, 10000);
+setInterval(function(){
+  localStorage.setItem("dice rolling incremental backup", btoa(JSON.stringify(player)))
+}, 60000)
 window.onload=function(){load()};
 
 function exportSave() {
@@ -142,6 +158,7 @@ function importSave(imported = undefined) {
     return
   }
   player =JSON.parse(atob(imported))
+  player.needsBackup=false
   save()
   window.location.reload();
 }
