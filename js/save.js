@@ -56,7 +56,7 @@ function start(){
     },
     // the gwa is in
     gwaed: false,
-    needsBackup: true
+    needsBackup: false,
   }
   return a
 }
@@ -146,7 +146,7 @@ function exportSave() {
   el.value = str;	
   document.body.appendChild(el);	
   el.select();
-  el.setSelectionRange(0, 99999);
+  el.setSelectionRange(0, 999999);
   document.execCommand("copy");
   document.body.removeChild(el);
 }

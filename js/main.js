@@ -58,19 +58,21 @@ function update(diff, isoffline=false) {
 }
 
 setInterval(function() {
-  if(gameLoaded && !hasNaN){
-    let diff = (Date.now()/1000) - player.lasttick
-    if(!player.offlineprogress) diff = Math.min(diff, 1)
-    //console.log(diff)
-    update(diff)
-    player.lasttick = Date.now()/1000
+  if(gameLoaded){
+    if(hasNaN && !NaNalerted){
+      alert("there is a NaN. refresh to revert to an older save. you may lose a small amount of progress")
+      NaNalerted = true
+      player.needsBackup = true
+    }
+    if(!hasNaN){
+      let diff = (Date.now()/1000) - player.lasttick
+      if(!player.offlineprogress) diff = Math.min(diff, 1)
+      //console.log(diff)
+      update(diff)
+      player.lasttick = Date.now()/1000
+    }
   }
   player.lasttick = Date.now()/1000
-  if(hasNaN && !NaNalerted){
-    alert("there is a NaN. refresh to revert to an older save. you may lose a small amount of progress")
-    NaNalerted = true
-    player.needsBackup = true
-  }
 }, 50)
 
 function D(x) {
