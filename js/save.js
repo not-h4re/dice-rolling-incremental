@@ -2,67 +2,64 @@ var player={}
 gameLoaded = false
 hasNaN = false
 NaNalerted = false
-// "gameLoaded is not defined" mf thats why i'm defining it
+// "gameLoaded is not defined" thats why i'm defining it
 
 function start(){
   let a={
     // tabs
     tab: "main",
     subtab: "none",
-    prevtab: {
-      gambling: "main",
-      sacrifice: "main"
-    },
     // other
     lasttick: 0,
-    // Base game
+    unl: {
+      gambling: false,
+      dice: false,
+    },
+    // base game
     points: d(0),
     bestpoints: d(0),
     minroll: d(0),
     maxroll: d(1),
     result: d(0),
-    upgs: [null,d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),null,d(0),d(0),d(0),d(0),d(0)],
-    unl: {
-      gambling: false,
-      sacrifice: false,
+    upgs: [null,d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0)],
+    auto: false,
+    // gambling
+    gamblinglevel: D(0),
+    // luck
+    luck: {
+      luck: D(0),
+      points: D(0),
+      unluck: D(0),
+      lastroll: D(0),
+      upgs: [null, d(0),d(0),d(0),d(0),d(0)],
+      freeupgs: [null, d(0),d(0),d(0),d(0),d(0)],
+      auto: false,
+    },
+    // dice
+    dice: {
+      amount: d(0),
+      total: D(0),
+      items: [null,d(0),d(0),d(0),d(0)],
+      upgattempts: [null,d(0),d(0),d(0),d(0)],
+      lastattempt: [null,d(0),d(0),d(0),d(0)],
+      shards: d(0),
+      resets: 0,
+      upgs: [],
+      tokens: d(0),
+      totaltokens: d(0),
     },
     // options
     offlineprogress: true,
     lastsaved: 0,
-    // gambling level
-    gamblinglevel: d(0),
-    // luck stuff
-    luck: {
-      luck: d(0),
-      points: d(0),
-      lastsuccess: false,
-      lastroll: 0,
-      unluck: d(0),
-      autoroll: false,
-      upgs: [null,d(0),d(0),d(0),d(0)],
-      pluck: D(0),
-      plastroll: D(0),
-      pluckinc: D(0)
-    },
-    // sacrifice things
-    sac: {
-      voidessence: D(0),
-      totalve: D(0),
-      resets: 0,
-      blessings: [],
-      totalofferings: D(0),
-      spentofferings: D(0),
-      offerings: d(0),
-    },
-    // the gwa is in
+    digitsep: ",",
+    // secrets :3
     gwaed: false,
-    needsBackup: false,
+    tacocatside: false,
   }
   return a
 }
 function save(){
-  if(!hasNaN) localStorage.setItem("dice rolling incremental save",btoa(JSON.stringify(player)))
-  else player.backup = btoa(JSON.stringify(player))
+  localStorage.setItem("dice rolling incremental save",btoa(JSON.stringify(player)))
   //$.notify('Saved game', 'success')
   player.lastsaved  = Date.now()
 }
@@ -118,20 +115,13 @@ function load() {
         Decimal,
         format,
         formatWhole,
-        miles,
         upgs,
         f,
+        ITEM_NAMES,
+        BOOST_TEXT,
+        DICEUPGS
       },
     }))
-  gameLoaded=true
-  if(player.needsBackup){
-    get = localStorage.getItem("dice rolling incremental backup")
-    if (get === null || get === undefined) {
-      player = start();
-    } else {
-      importSave(get)
-    }
-  }
 }
 
 setInterval(function () {save()}, 10000);
@@ -157,6 +147,10 @@ function importSave(imported = undefined) {
     player.gwaed = true
     return
   }
+  if(imported == "taco cat side"){
+    player.tacocatside = true
+    return
+  }
   player =JSON.parse(atob(imported))
   player.needsBackup=false
   save()
@@ -168,5 +162,20 @@ function hardReset(){
     player=start()
     window.location.reload();
     save()
+  }
+}
+
+function toggleDigitSep(){
+  if(player.digitsep == ",") {
+    player.digitsep = " "
+  } else {
+    player.digitsep = ","
+  }
+}
+function digitSepText(){
+  if(player.digitsep == ",") {
+    return "comma"
+  } else {
+    return "space"
   }
 }

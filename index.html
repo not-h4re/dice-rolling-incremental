@@ -12,11 +12,11 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script src="js/main.js" defer></script>
+    <script src="js/dice.js" defer></script>
     <script src="js/save.js"></script>
     <script src="libs/break_eternity.js"></script>
     <script src="js/customFormat.js" defer></script>
     <script src="libs/notify.js" defer></script>
-    <script src="js/sacrifice.js" defer></script>
     
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
@@ -27,233 +27,213 @@
       You have <h2 class="glow p">{{f(player.points)}}</h2> points<br><br>
       
       <!-- TABS -->
-      <button class="tab" onclick="player.tab='main'">
+      <button class="tab" onclick="tab('main', 'none')">
         Main
       </button>
-      <button v-if="player.unl.gambling" class="tab" onclick="tab('gambling', player.prevtab.gambling)">
+      <button class="tab" v-if="player.unl.gambling" onclick="tab('gambling', 'main')">
         Gambling
       </button>
-      <button v-if="player.unl.sacrifice" class="tab" onclick="tab('sacrifice', player.prevtab.sacrifice)">
-        Sacrifice
+      <button class="tab" v-if="player.unl.dice" onclick="tab('dice', 'main')">
+        Dice
       </button>
-      <button class="tab" onclick="player.tab='opt'">
+      <button class="tab" onclick="tab('opt', 'none')">
         Options
       </button><br><br>
       
       <!-- MAIN GAME-->
       <div v-if="player.tab=='main'">
-        <!--
-        this is testing
-        <span v-for="n in 10" :key="n">
-          {{n}}
-        </span>
-        -->
+        <span v-if="player.gwaed == true">what the gwa<br></span>
         <span style="font-size:18px !important;">
           Your dice has {{f(player.maxroll.sub(player.minroll).add(1))}} sides<br>
           (Range: {{f(player.minroll)}} - {{f(player.maxroll)}})<br>
           Point gain is x{{f(pointMul())}} of dice roll<br>
-          Upgrade n is autobought for free when upgrade n+4 is owned!<br>
         </span>
-        <button class="upg rollbtn" onclick="roll()">
-          Roll the dice<br>
-          Last roll: {{f(player.result)}}
-        </button>
+        <span class="opt upgs">
+          <button class="upg rollbtn" onclick="roll()">
+            Roll the dice<br>
+            Last roll: {{f(player.result)}}
+          </button>
+          <button class="upg rollbtn" onclick="player.auto = !player.auto" v-if="miles[7].owned()">
+            Auto roll: {{player.auto}}
+          </button>
+        </span>
         <br><br>
         <span class="opt upgs">
           <button :class="{upg: true, can: canAfford(n)}" @click="buyupg(n)" v-if="upgs[n].unlocked()" v-for="n in 5">
-            ({{f(player.upgs[n], 0)}}/{{f(upgs[n].cap(), 0)}})<br>
+            (pu{{n}}, {{f(player.upgs[n], 0)}}/{{f(upgs[n].cap(), 0)}})<br>
             {{upgs[n].description()}}<br>
             Currently: {{upgs[n].effDis()}}<br>
             {{player.upgs[n].gte(upgs[n].cap())?"Maxed!":("Cost: "+f(upgs[n].cost())+" "+upgs[n].curr)}}
           </button>
         </span>
         <span class="opt upgs">
-          <button v-for="n in 4" :class="{upg: true, can: canAfford(n+5)}" @click="buyupg(n+5)" v-if="upgs[n+5].unlocked()">
-            ({{f(player.upgs[n+5], 0)}}/{{f(upgs[n+5].cap(), 0)}})<br>
+          <button :class="{upg: true, can: canAfford(n+5)}" @click="buyupg(n+5)" v-if="upgs[n+5].unlocked()" v-for="n in 5">
+            (pu{{n+5}}, {{f(player.upgs[n+5], 0)}}/{{f(upgs[n+5].cap(), 0)}})<br>
             {{upgs[n+5].description()}}<br>
             Currently: {{upgs[n+5].effDis()}}<br>
             {{player.upgs[n+5].gte(upgs[n+5].cap())?"Maxed!":("Cost: "+f(upgs[n+5].cost())+" "+upgs[n+5].curr)}}
           </button>
-          <button v-if="miles.void[1].isOwned()" onclick="buyAllUpgrades(5)" class="upg">
-            Attempts to buy at most 5 of each upgrade
-          </button>
         </span>
         <span class="opt upgs">
-          <button :class="{upg: true, can: canAfford(n+10)}" @click="buyupg(n+10)" v-if="upgs[n+10].unlocked()" v-for="n in 2">
-            ({{f(player.upgs[n+10], 0)}}/{{f(upgs[n+10].cap(), 0)}})<br>
+          <button :class="{upg: true, can: canAfford(n+10)}" @click="buyupg(n+10)" v-if="upgs[n+10].unlocked()" v-for="n in 5">
+            (pu{{n+10}}, {{f(player.upgs[n+10], 0)}}/{{f(upgs[n+10].cap(), 0)}})<br>
             {{upgs[n+10].description()}}<br>
             Currently: {{upgs[n+10].effDis()}}<br>
             {{player.upgs[n+10].gte(upgs[n+10].cap())?"Maxed!":("Cost: "+f(upgs[n+10].cost())+" "+upgs[n+10].curr)}}
           </button>
         </span>
-      </div>
-      
-      <!-- GAMBLING :$ -->
-      <div v-if="checkTab('gambling')">
-        <button class="tab" onclick="tab('gambling', 'main')">
-          Main
-        </button>
-        <button class="tab" onclick="tab('gambling', 'luck')" v-if="miles[7].isOwned()">
-          Luck
-        </button>
-        <button class="tab" onclick="tab('gambling', 'pluck')" v-if="miles[12].isOwned()">
-          Prestige Luck
-        </button>
-      </div>
-
-      <div v-if="checkTab('gambling', 'main')">
-        Your g<span v-if="player.gwaed==true">w</span>ambling level is <h2 class="glow gl">{{format(player.gamblinglevel, 0)}}</h2><br><br>
-        
-        Reset all base features (points, point upgrades) to increase your g<span v-if="player.gwaed==true">w</span>ambling level by 1<br>
-        Your g<span v-if="player.gwaed==true">w</span>ambling level multiplies point gain by {{format(gamblingLevelToPointMulti())}}<br>
-        It also autobuys the first {{formatWhole(autoboughtUpgradesFromGamblingLevel())}} point upgrades<br>
-        There are also milestones associated with g<span v-if="player.gwaed==true">w</span>ambling level<br><br>
-        
-        <button :class="{reset: true, can: canIncreaseGamblingLevel()}" onclick="increaseGamblingLevel()">
-          The next g<span v-if="player.gwaed==true">w</span>ambling level requires {{format(gamblingLevelReq(player.gamblinglevel))}} points<br><br>
-          Click this button to reset
-        </button>
-        
-        <div class="milecontainer">
-          <span v-for="n in 15">
-            <div :class="{milestone: true, got: miles[n].isOwned()}" v-if="miles[Math.max(0, n-4)].isOwned()">
-              <h3 class="inline">
-                {{miles[n].name}}
-              </h3><br>
-              {{miles[n].effect}}
-            </div>
-          </span>
-        </div>
-      </div>
-
-      <div v-if="checkTab('gambling', 'luck')">
-        <span v-if="player.gwaed == true">the gwa is in<br></span>
-        You have <span class="glow l">{{format(player.luck.luck, 7)}}</span> luck<br>
-        You have <span class="glow l">{{format(player.luck.points)}}</span> luck points, multiplying point gain by <span class="glow l">{{format(getPointBoostFromLuck())}}</span><br>
-        Your luck generates {{format(luckPointGen(), 5)}} luck points/second<br>
-        You also have <span class="glow l">{{format(player.luck.unluck)}}</span> unluck, dividing gambling level requirement by {{format(unluckEffect())}}<br>
-        You gain {{format(unluckGain())}} unluck per roll that did not increase your luck<br>
-        Luck formula: log<sub>2</sub>(1/Math.random() * {{format(luckChanceMulti())}}) + 1<br>
-        <br>
-        <div class="opt upgs">
-          <button onclick="luckRoll()" class="rollbtn upg">
-            Click to roll<br>
-            The last roll had a result of {{format(player.luck.lastroll, 7)}}
-          </button>
-          <button onclick="player.luck.autoroll = !player.luck.autoroll" class="rollbtn upg" v-if="miles[10].isOwned()">
-            Auto roll: {{player.luck.autoroll}}
-          </button>
-        </div>
-        <br><br>
-        <div class="opt upgs">
-          <button v-for="n in 4" :class="{upg: true, can: canAffordLuckUpg(n)}" @click="buyluckupg(n)" v-if="upgs.luck[n].unlocked && player.gamblinglevel.gte(11)">
-            ({{f(player.luck.upgs[n], 0)}})<br>
-            {{upgs.luck[n].description()}}<br>
-            Currently: {{upgs.luck[n].effDis()}}<br>
-            Cost: {{f(upgs.luck[n].cost())}} unluck
-          </button>
-          <button v-if="miles.void[1].isOwned()" onclick="buyAllLuckUpgrades(5)" class="upg">
-            Attempts to buy at most 5 of each upgrade
-          </button>
-        </div>
-      </div>
-
-      <div v-if="checkTab('gambling', 'pluck')">
-        <span v-if="player.gwaed == true">the prestiged gwa is in<br></span>
-        Let the inflation begin.<br>
-        You have <span class="glow pl">{{f(player.luck.pluck, 7)}}</span><span v-if="player.luck.pluck.gte(pluckCap())"> (hardcapped)</span> prestige luck<br>
-        Your prestige luck multiplies unluck gain by <span class="glow pl">{{f(pluckEffect())}}</span><br>
-        <br>
-        Reset the base and luck features, except upgrades, to roll prestige luck<br>
-        You need to be gl{{formatWhole(player.luck.pluckinc.add(20))}} or above to reset<br>
-        This increases when you get a roll that increases your prestige luck<br>
-        Your prestige luck multiplier is <span class="glow pl">x{{f(pluckMult(), 7)}}</span><br>
-        (1.15<sup>gl - 20</sup> * 1.12<sup>luck - 10</sup> * (10<sup>-10</sup> + 1.01<sup>log<sub>1.11</sub>((unluck+1)/1e40)</sup>))<br>
-        <br>
-        <div class="opt upgs">
-          <button onclick="prestigeLuckReset()" :class="{reset: true, can: canPluckReset()}">
-            Click this button to reset<br>
-            Last roll: {{f(player.luck.plastroll)}}
-          </button>
-          <button class="reset can" onclick="pluckRespec()">
-            Reset prestige luck but reset the gambling level requirement; this also does a prestige luck reset
-          </button>
-        </div>
-      </div>
-
-      <!-- layer 3 -->
-      <div v-if="player.tab=='sacrifice'">
-        <button class="tab" onclick="tab('sacrifice', 'main')">
-          Main
-        </button>
-        <button class="tab" onclick="tab('sacrifice', 'blessings')">
-          Blessings
-        </button>
-        <button class="tab" onclick="tab('sacrifice', 'favor')">
-          Favor
-        </button>
-        <button class="tab" onclick="tab('sacrifice', 'offering')" v-if="miles.void[5].isOwned()">
-          Offerings
-        </button>
-      </div>
-      <div v-if="checkTab('sacrifice', 'main')">
-        <span v-if="player.gwaed==true">the voidgwa is in<br></span>
-        You have <span class="glow s">{{format(player.sac.voidessence)}}</span> void essence ({{f(player.sac.totalve)}} total)<br>
-        <br>
-        Sacrifice everything before this point to the void for void essence<br>
-        void essence can be spent on blessings and probably more stuff later<br>
-        Gambling Level 27 is required to reset<br>
-        <br>
-        <button :class="{reset: true, can: miles[13].isOwned()}" onclick="sacrificeReset()" @mousedown="">
-          Sacrifice for +{{f(voidEssenceGain())}} void essence<br>
-          <span v-if="player.sac.resets == 0">Your first reset always gives you 4 void essence</span><br>
-          (base gain = 2<sup>sqrt(gl - 26)</sup>)
-        </button>
-      </div>
-      <div v-if="checkTab('sacrifice','blessings')">
-        You have <span class="glow s">{{format(player.sac.voidessence)}}</span> void essence<br>
-        Each blessing requires the one above it to be purchased before you can buy it<br>
-        <br>
-        <span v-for="i in 4" class="opt upgs">
-          <button v-for="j in 5" :class="{upg: true, can: canAffordBlessing((i*10)+j), voidowned: player.sac.blessings.includes((10*i)+j)}" @click="buyBlessing((i*10)+j)" :v-if="i==4 ? miles.offering[3].isOwned() : true">
-            <b>{{blessings[(i*10)+j].title}}</b><br>
-            {{blessings[(i*10)+j].description}}<br>
-            Cost: {{formatWhole(blessings[(i*10)+j].cost())}} void essence
+        <span class="opt upgs">
+          <button :class="{upg: true, can: canAfford(n+15)}" @click="buyupg(n+15)" v-if="upgs[n+15].unlocked()" v-for="n in 5">
+            (pu{{n+15}}, {{f(player.upgs[n+15], 0)}}/{{f(upgs[n+15].cap(), 0)}})<br>
+            {{upgs[n+15].description()}}<br>
+            Currently: {{upgs[n+15].effDis()}}<br>
+            {{player.upgs[n+15].gte(upgs[n+15].cap())?"Maxed!":("Cost: "+f(upgs[n+15].cost())+" "+upgs[n+15].curr)}}
           </button>
         </span>
       </div>
-      <div v-if="checkTab('sacrifice', 'favor')">
-        You have <span class="glow s">{{formatWhole(voidFavorLevel())}}</span> void favor<br>
-        Next void favor: <span class="glow s">{{f(player.sac.totalve)}}/{{f(voidFavorReq())}}</span> total void essence<br>
-        <br>
-        <div class="milecontainer">
-          <span v-for="n in 9">
-            <div :class="{milestone: true, voidunowned: !miles.void[n].isOwned(), voidowned: miles.void[n].isOwned()}">
-              <h3 class="inline">
-                {{miles.void[n].name}}
-              </h3><br>
-              {{miles.void[n].effect}}
-            </div>
+
+      <div v-if="player.tab=='gambling'">
+        <button class="tab" onclick="player.subtab='main'">
+          Main
+        </button>
+        <button class="tab" v-if="player.gamblinglevel.gte(8)" onclick="player.subtab='luck'">
+          Luck
+        </button>
+        <div v-if="player.subtab=='main'">
+          <span v-if="player.gwaed == true">the gwa is in<br></span>
+          Your g<span v-if="player.gwaed==true">w</span>ambling level is <span class="glow gl">{{formatWhole(player.gamblinglevel)}}</span><br><br>
+
+          Reset points and all point upgrades to increase your g<span v-if="player.gwaed==true">w</span>ambling level by 1<br>
+          Your g<span v-if="player.gwaed==true">w</span>ambling level multiplies point gain by <span class="glow gl">{{f(gamblingPointBoost())}}</span><br>
+          There are also milestones <span v-if="player.tacocatside==false">associated</span><span v-if="player.tacocatside==true">taco cat side</span> with g<span v-if="player.gwaed==true">w</span>ambling level<br>
+          <br>
+          <button :class="{reset: true, can: canGamblingReset()}" onclick="gamblingReset()">
+            The next g<span v-if="player.gwaed==true">w</span>ambling level requires {{format(gamblingReq(player.gamblinglevel))}} points<br><br>
+            Click this button to reset
+          </button>
+          <br>
+          <div class="milecontainer">
+            <span v-for="n in 14">
+              <div :class="{milestone: true, got: miles[n].owned()}" v-if="miles[Math.max(0, n-4)].owned()">
+                <h3 class="inline">
+                  {{miles[n].name}}
+                </h3><br>
+                {{miles[n].effect}}
+              </div>
+            </span>
+          </div>
+        </div>
+        <div v-if="player.subtab=='luck'">
+          <span v-if="player.gwaed == true">the gwa is in<br></span>
+          You have <span class="glow l">{{format(player.luck.luck, 7)}}</span> luck<br>
+          You have <span class="glow l">{{format(player.luck.points)}}</span> luck points, multiplying point gain by <span class="glow l">{{format(luckToPointBoost())}}</span><br>
+          Your luck generates {{format(luckPointGen(), 5)}} luck points/second<br>
+          You also have <span class="glow l">{{format(player.luck.unluck)}}</span> unluck, dividing gambling level requirement by {{format(unluckEffect())}}<br>
+          You gain {{format(unluckGain())}} unluck per roll that did not increase your luck<br>
+          Luck formula: log<sub>2</sub>(1/(1-Math.random()) * {{format(luckChanceMulti())}}) + 1<br>
+          <br>
+          <div class="opt upgs">
+            <button onclick="luckRoll()" class="rollbtn upg">
+              Click to roll<br>
+              The last roll had a result of {{format(player.luck.lastroll, 7)}}
+            </button>
+            <button class="upg rollbtn" onclick="player.luck.auto = !player.luck.auto" v-if="miles[11].owned()">
+              Auto luck roll: {{player.luck.auto}}
+            </button>
+          </div>
+          <br><br>
+          <span class="opt upgs">
+            <button :class="{upg: true, can: canAffordLuckUpg(n)}" @click="buyLuckUpg(n)" v-if="upgs.luck[n].unlocked()" v-for="n in 5">
+              (lu{{n}}, {{f(player.luck.upgs[n], 0)}}+{{f(player.luck.freeupgs[n], 0)}}/{{f(upgs.luck[n].cap(), 0)}})<br>
+              {{upgs.luck[n].description()}}<br>
+              Currently: {{upgs.luck[n].effDis()}}<br>
+              {{player.luck.upgs[n].gte(upgs.luck[n].cap())?"Maxed!":("Cost: "+f(upgs.luck[n].cost())+" "+upgs.luck[n].curr)}}
+            </button>
           </span>
         </div>
       </div>
-      <div v-if="checkTab('sacrifice', 'offering')">
-        You have <span class="glow s">{{formatWhole(player.sac.offerings)}}</span> offerings (<span class="glow s">{{formatWhole(player.sac.totalofferings)}}</span> total)<br>
-        The next offering will be obtained at <span class="glow s">{{format(offeringReq(player.sac.totalofferings.add(1)))}}</span> points<br>
-        You have sacrificed <span class="glow s">{{formatWhole(player.sac.spentofferings)}}</span> offerings<br>
-        <br>
-        <button class="reset" onclick="spendOffering()">
-          Sacrifice an offering to the void
-        </button><br>
-        <br>
-        <div class="milecontainer">
-          <span v-for="n in 4">
-            <div :class="{milestone: true, voidunowned: !miles.offering[n].isOwned(), voidowned: miles.offering[n].isOwned()}">
-              <h3 class="inline">
-                {{miles.offering[n].name}}
-              </h3><br>
-              {{miles.offering[n].effect}}
-            </div>
+
+      <div v-if="player.tab=='dice'">
+        <button class="tab" onclick="player.subtab='main'">
+          Main
+        </button>
+        <button class="tab" onclick="player.subtab='items'" v-if="player.dice.resets > 0">
+          Items
+        </button>
+        <button class="tab" onclick="player.subtab='tokens'" v-if="player.dice.resets > 0">
+          Tokens
+        </button>
+        <div v-if="player.subtab=='main'">
+          You have <span class="glow d">{{f(player.dice.amount)}}</span> dice<br>
+          1e100 points and Gambling Level 21 are required to reset<br>
+          Dice gain is based on points and gambling level<br>
+          <br>
+          <button :class="{reset: true, can: canDiceReset()}" onclick="diceReset()">
+            Gain {{f(diceGain())}} dice, but reset everything before this point
+          </button>
+        </div>
+        <div v-if="player.subtab=='items'">
+          You have <span class="glow d">{{f(player.dice.shards)}}</span> dice shards (+<span class="glow d">{{f(diceShardGain())}}</span>/s)<br>
+          Dice shard gain is based on total dice<br>
+          The chance of getting at least a tier n item is currently {{f(upgradeChance())}}<sup>n-1</sup><br>
+          <br>
+          Your {{ITEM_NAMES[1]}} is currently tier {{formatWhole(player.dice.items[1])}}<br>
+          This is {{BOOST_TEXT[1]}} by <span class="glow d">{{f(getItemBoost(1))}}</span><br>
+          <button :class="{upg: true, wide: true, can: player.dice.shards.gte(upgradeCost(1))}" onclick="upgradeItem(1)">
+            Attempt to increase the tier of your {{ITEM_NAMES[1]}}<br>
+            Cost: {{f(upgradeCost(1))}} dice shards<br>
+            Your last attempt gave a tier of {{formatWhole(player.dice.lastattempt[1])}}
+          </button><br>
+          <br>
+          Your {{ITEM_NAMES[2]}} is currently tier {{formatWhole(player.dice.items[2])}}<br>
+          This is {{BOOST_TEXT[2]}} by <span class="glow d">{{f(getItemBoost(2))}}</span><br>
+          <button :class="{upg: true, wide: true, can: player.dice.shards.gte(upgradeCost(2))}" onclick="upgradeItem(2)">
+            Attempt to increase the tier of your {{ITEM_NAMES[2]}}<br>
+            Cost: {{f(upgradeCost(2))}} dice shards<br>
+            Your last attempt gave a tier of {{formatWhole(player.dice.lastattempt[2])}}
+          </button><br>
+          <br>
+          Your {{ITEM_NAMES[3]}} is currently tier {{formatWhole(player.dice.items[3])}}<br>
+          This is {{BOOST_TEXT[3]}} by <span class="glow d">{{f(getItemBoost(3))}}</span><br>
+          It also makes you start at gambling level {{formatWhole(player.dice.items[3].min(16))}}<br>
+          <button :class="{upg: true, wide: true, can: player.dice.shards.gte(upgradeCost(3))}" onclick="upgradeItem(3)">
+            Attempt to increase the tier of your {{ITEM_NAMES[3]}}<br>
+            Cost: {{f(upgradeCost(3))}} dice shards<br>
+            Your last attempt gave a tier of {{formatWhole(player.dice.lastattempt[3])}}
+          </button><br>
+          <br>
+          Your {{ITEM_NAMES[4]}} is currently tier {{formatWhole(player.dice.items[4])}}<br>
+          This is {{BOOST_TEXT[4]}} by <span class="glow d">{{f(getItemBoost(4))}}</span><br>
+          <button :class="{upg: true, wide: true, can: player.dice.shards.gte(upgradeCost(4))}" onclick="upgradeItem(4)">
+            Attempt to increase the tier of your {{ITEM_NAMES[4]}}<br>
+            Cost: {{f(upgradeCost(4))}} dice shards<br>
+            Your last attempt gave a tier of {{formatWhole(player.dice.lastattempt[4])}}
+          </button>
+        </div>
+        <div v-if="player.subtab=='tokens'">
+          You have <span class="glow d">{{formatWhole(player.dice.tokens)}}</span> upgrade tokens ({{formatWhole(player.dice.totaltokens)}} total)<br>
+          <button :class="{upg: true, can: player.dice.amount.gte(tokenCost())}" onclick="buyToken()">
+            Buy an upgrade token<br>
+            Cost: {{formatWhole(tokenCost())}} dice
+          </button><br>
+          <br>
+          Buying an upgrade increases the cost of all upgrades in the row,<br>
+          but decreases the cost of all upgrades in the column<br>
+          (this can't decrease the cost below 1)<br>
+          <span class="opt upgs">
+            <button class="upg" onclick="respecDiceUpgs()">
+              Respec dice upgrades
+            </button>
+          </span>
+          <span class="opt upgs" v-for="n in 4">
+            <span v-for="m in 4">
+              <button :class="{upg: true, can: player.dice.tokens.gte(diceUpgCost(n*10+m)), diceunowned:!diceUpgOwned(n*10+m), diceowned:diceUpgOwned(n*10+m)}" @click="buyDiceUpg(n*10+m)">
+                (du{{n*10+m}})<br>
+                {{DICEUPGS[n*10+m].description}}<br>
+                Currently: {{DICEUPGS.symbolsByRow[n-1]}}{{f(DICEUPGS[n*10+m].effect())}}<br>
+                Cost: {{f(diceUpgCost(n*10+m))}} upgrade tokens
+              </button>
+            </span>
           </span>
         </div>
       </div>
@@ -282,15 +262,14 @@
           <button class="option" onclick="player.offlineprogress = !player.offlineprogress">
             Cap tick length: {{!player.offlineprogress}}
           </button>
-          <button class="option" onclick="player.gwaed = false" v-if="player.gwaed">
-            Remove the gwa
+          <button class="option" onclick="toggleDigitSep()">
+            Digit seperator: {{digitSepText()}}
           </button>
           <!-- 
           TODO make importbox modal
-          also make option buttons be 3/row
           -->
         </div><br>
-        You are playing dice rolling incremental v0.2 - void sacrifices<br>
+        You are playing dice rolling incremental v0.2b4 - void sacrifices (not yet implemented) + revamp<br>
       </div>
     </div>
   </body>
