@@ -1,6 +1,9 @@
-function diceGain(){
-  // gain = log[100 000, points/1e95] * 1.05 ^ (gambling level - 21), floored
-  let gain = player.points.div(1e95).max(1).log(100000).max(0).mul(Decimal.pow(1.05, player.gamblinglevel.sub(21))).floor()
+function diceGain(floor = true){
+  // gain = log[100 000, points/1e95] * 1.1 ** (gambling level - 21), floored
+  let gain = player.points.div(1e95).max(1).log(100000).max(0).mul(Decimal.pow(1.1, player.gamblinglevel.sub(21)))
+  gain = gain.mul(chalEffect(3))
+  if(miles[17].owned()) gain = gain.mul(10)
+  if(floor) gain = gain.floor()
   return gain
 }
 function canDiceReset() {
@@ -30,7 +33,13 @@ function diceReset(force=false){
   player.upgs = [null,d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0)]
 
   // why here? i felt like it
-  if(player.dice.items[3].gte(1)) player.gamblinglevel = player.dice.items[3].min(16)
+  let startGL = d(0)
+  if(DICEMILES[1].owned()) startGL = d(4)
+  player.gamblinglevel = startGL
+  if(DICEMILES[4].owned()){
+    player.auto = true
+    player.luck.auto = true
+  }
 }
 
 function diceShardGain(){
@@ -40,6 +49,7 @@ function diceShardGain(){
   if(diceUpgOwned(42)) gain = gain.mul(DICEUPGS[42].effect())
   if(diceUpgOwned(43)) gain = gain.mul(DICEUPGS[43].effect())
   if(diceUpgOwned(44)) gain = gain.mul(DICEUPGS[44].effect())
+  if(DICEMILES[5].owned()) gain = gain.mul(100)
   return gain
 }
 
@@ -59,6 +69,7 @@ function getItemBoost(itemID){
 }
 function upgradeChance(){
   let cha = 0.2 // i don't think i need to decimalise this
+  if(DICEMILES[5].owned()) cha += 0.1
   if(diceUpgOwned(21)) cha = cha+DICEUPGS[21].effect()
   if(diceUpgOwned(22)) cha = cha+DICEUPGS[22].effect().toNumber()
   if(diceUpgOwned(23)) cha = cha+DICEUPGS[23].effect().toNumber()
@@ -124,7 +135,7 @@ const DICEUPGS = {
   },
   24: {
     description: "Increase the base in item tier generation based on this upgrades cost",
-    effect() {return diceUpgCost(24).div(7700).mul(8).min(0.08)}
+    effect() {return diceUpgCost(24).max(DICEMILES[9].owned()?100:0).div(7700).mul(8).min(0.08)}
   },
   31: {
     description: "Increase the base in item effects by 0.5",
@@ -162,21 +173,24 @@ const DICEUPGS = {
   },
   44: {
     description: "Multiply dice shard gain based on this upgrades cost",
-    effect() {return diceUpgCost(44).div(7.7).add(1)}
+    effect() {return diceUpgCost(44).max(DICEMILES[9].owned()?100:0).div(7.7).add(1)}
   }
 }
 function diceUpgCost(id){
   // cost = 3^(owned upgs in row) - owned upgs in column
   let x = [0,0]
   for(i in player.dice.upgs){
-    if(Math.floor(player.dice.upgs[i]/10) == Math.floor(id/10)) x[0] += 1
-    if(player.dice.upgs[i]%10 == id%10) x[1] += 1
+    if(Math.floor(player.dice.upgs[i]/10) == Math.floor(id/10)) x[0] += 1 // row check, all will have constant x in some id xy
+    if(player.dice.upgs[i]%10 == id%10) x[1] += 1 // column check, all will have constant y in some id xy
   }
   //console.log("upgrade "+id+": x = "+x)
   let cost = d(1)
   cost = cost.mul(Decimal.pow(3, x[0]))
-  cost = cost.sub(x[1]).max(1)
-  return cost
+  cost = cost.sub(x[1])
+
+  if(DICEMILES[3].owned()) cost = cost.sub(4)
+  if(DICEMILES[10].owned()) cost = cost.sub(15)
+  return cost.max(1).round()
 }
 function diceUpgOwned(id){
   return player.dice.upgs.includes(id)
@@ -190,17 +204,123 @@ function buyDiceUpg(id){
 }
 function respecDiceUpgs(){
   if(!confirm("Are you sure? This will force a dice reset, reset your dice upgrades and give you all your upgrade tokens back")) return
-  diceReset(true)
+  diceReset(true) // likely the only use of diceReset(true)
   player.dice.upgs = []
-  player.dice.tokens = player.dice.totaltokens
+  player.dice.tokens = player.dice.totaltokens.round()
 }
 
 function tokenCost(){
-  return Decimal.pow(2, player.dice.totaltokens)
+  let cost = Decimal.pow(2, player.dice.totaltokens)
+  if(DICEMILES[1].owned()) cost = cost.div(4)
+  if(DICEMILES[2].owned()) cost = cost.div(4)
+  if(DICEMILES[9].owned()) cost = cost.div(16)
+  return cost.round()
 }
 function buyToken(){
-  if(player.dice.amount.lt(tokenCost())) return
+  if(player.dice.amount.lt(tokenCost()) && !player.dice.totaltokens.lt(32)) return
   player.dice.amount = player.dice.amount.sub(tokenCost())
-  player.dice.tokens = player.dice.tokens.add(1)
-  player.dice.totaltokens = player.dice.totaltokens.add(1)
+  player.dice.tokens = player.dice.tokens.add(1).round()
+  player.dice.totaltokens = player.dice.totaltokens.add(1).round()
+}
+
+const DICEMILES = {
+  0: {owned() {return true}}, // fix for bad code
+  1: {
+    name: "1e106 points",
+    effect: "Start at gambling level 4 after dice resets, and the cost of upgrade tokens is reduced by 75%",
+    owned() {return player.bestpoints.gte(1e106)}
+  },
+  2: {
+    name: "Gambling Level 22",
+    effect: "Automatically perform gambling level resets without resetting anything, and you can buy max pu11~20, but only if you have the gambling level 16 milestone. Also improve the gambling level effect",
+    owned() {return player.bestgl.gte(22)}
+  },
+  3: {
+    name: "1.11e111 points",
+    effect: "Automatically buy luck upgrades, and reduce the cost of dice upgrades by 4 upgrade tokens (can't go below 1). Also divide the cost of upgrade tokens by 4",
+    owned() {return player.bestpoints.gte(1.11e111)}
+  },
+  4: {
+    name: "8 total upgrade tokens",
+    effect: "Roll and luck roll automation are both kept on dice resets",
+    owned() {return player.dice.totaltokens.gte(8)}
+  },
+  5: {
+    name: "1e114 points",
+    effect: "Multiply dice shard gain by 100, and add 0.1 to the base in item tier generation",
+    owned() {return player.bestpoints.gte(1e114)}
+  },
+  6: {
+    name: "1e119 points",
+    effect: "Unlock challenges",
+    owned() {return player.bestpoints.gte(1e119)}
+  },
+  7: {
+    name: "18 total upgrade tokens",
+    effect: "Unlock more gambling level milestones",
+    owned() {return player.dice.totaltokens.gte(18)}
+  },
+  8: {
+    name: "3e160 points",
+    effect: "Increase the effect of pu11~pu13 to x1.25 per level",
+    owned() {return player.bestpoints.gte(3e160)}
+  },
+  9: {
+    name: "Gambling Level 31",
+    effect: "Divide upgrade token cost by 16, and dice upgrades reliant on the cost of the upgrade now act as if the cost is 100",
+    owned() {return player.bestgl.gte(31)}
+  },
+  10: {
+    name: "24 total upgrade tokens",
+    effect: "Reduce the cost of all dice upgrades by 15 upgrade tokens",
+    owned() {return player.dice.totaltokens.gte(24)}
+  },
+  11: {
+    name: "50 total item tiers",
+    effect: "Boosts from challenges are better",
+    owned() {
+      let tier = d(0)
+      for(let i=1;i<=4;i++){
+        tier = tier.add(player.dice.items[i])
+      }
+      return tier.gte(50)
+    }
+  }
+}
+
+function enterChal(n){
+  diceReset(true)
+  if(player.dice.chal.current == 0) player.dice.chal.current = n
+  else player.dice.chal.current = 0
+  diceReset(true)
+}
+function chalEffect(n){
+  let point = player.dice.chal.best[n]
+  if(!DICEMILES[11].owned()){
+    switch(n){
+      case 1:
+        return point.max(1).log(2).pow(4).max(1)
+      case 2:
+        return point.max(1).log(3).pow(3).max(1)
+      case 3:
+        return point.max(1).log10().max(1)
+      case 4:
+        return point.max(1).log(2.5).pow(2).max(1)
+      default:
+        return d(1)
+    }
+  } else {
+    switch(n){
+      case 1:
+        return Decimal.pow(3, point.max(1).log(10))
+      case 2:
+        return Decimal.pow(2.5, point.max(1).log(9))
+      case 3:
+        return Decimal.pow(1.3, point.max(1).log(9))
+      case 4:
+        return Decimal.pow(2.5, point.max(1).log(10))
+      default:
+        return d(1)
+    }
+  }
 }

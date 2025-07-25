@@ -3,6 +3,7 @@ gameLoaded = false
 hasNaN = false
 NaNalerted = false
 // "gameLoaded is not defined" thats why i'm defining it
+// these globals are redundant (except player)
 
 function start(){
   let a={
@@ -25,6 +26,7 @@ function start(){
     auto: false,
     // gambling
     gamblinglevel: D(0),
+    bestgl: D(0),
     // luck
     luck: {
       luck: D(0),
@@ -47,6 +49,10 @@ function start(){
       upgs: [],
       tokens: d(0),
       totaltokens: d(0),
+      chal: {
+        current: 0,
+        best: [null,d(0),d(0),d(0),d(0)]
+      },
     },
     // options
     offlineprogress: true,
@@ -60,7 +66,7 @@ function start(){
 }
 function save(){
   localStorage.setItem("dice rolling incremental save",btoa(JSON.stringify(player)))
-  //$.notify('Saved game', 'success')
+  //$.notify('Saved game', 'success') artifact of when i used jQuery to do this
   player.lastsaved  = Date.now()
 }
 function fixSave() {

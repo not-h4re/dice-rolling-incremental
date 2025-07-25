@@ -60,7 +60,7 @@ function format(decimal, precision = 3, small=false) {
     else if (decimal.gte("1e10000")) return exponentialFormat(decimal, 0)
     else if (decimal.gte(1e6)) return exponentialFormat(decimal, precision)
     else if (decimal.gte(1e3)) return commaFormat(decimal, 0)
-    else if (decimal.gte(0.01)) return regularFormat(decimal, precision)
+    else if (decimal.gte(0.001)) return regularFormat(decimal, precision)
     else if (decimal.eq(0)) return (0).toFixed(precision)
 
     decimal = invertOOM(decimal)
@@ -79,8 +79,8 @@ function f(x,y,z){
 
 function formatWhole(decimal) {
     decimal = new Decimal(decimal)
-    if (decimal.gte(1e9)) return format(decimal, 2)
-    if (decimal.lte(0.99) && !decimal.eq(0)) return format(decimal, 2)
+    if (decimal.gte(1e6)) return format(decimal, 3)
+    if (decimal.lte(0.99) && !decimal.eq(0)) return format(decimal, 3)
     return format(decimal, 0)
 }
 

@@ -2,6 +2,7 @@
 
 
 function update(diff, isoffline=false) {
+  // why? just use the functions
   player.minroll = getMinRoll()
   player.maxroll = getMaxRoll()
 
@@ -9,17 +10,11 @@ function update(diff, isoffline=false) {
     player.started=Date.now()
     player.lasttick=Date.now()/1000
   }
-  if(player.points.gte(1e10)) player.unl.gambling = true
+  // milestone owned system can probably be optimised
+  // to not check every tick
   if(miles[14].owned()) player.unl.dice = true
 
   //console.log(diff)
-  /*for(let i=5;i<=9;i++){
-    if(player.upgs[i].gt(0)){
-      buyupg(i-4,true)
-    }
-  }*/
-  
-  player.bestpoints = Decimal.max(player.points, player.bestpoints)
 
   if(player.gamblinglevel.gte(2)){
     buyupg(1)
@@ -38,16 +33,16 @@ function update(diff, isoffline=false) {
     buyupg(10)
   }
   if(miles[10].owned()){
-    buyupg(11, true)
-    buyupg(12, true)
-    buyupg(13, true)
-    buyupg(14, true)
-    buyupg(15, true)
-    buyupg(16, true)
-    buyupg(17, true)
-    buyupg(18, true)
-    buyupg(19, true)
-    buyupg(20, true)
+    buyupg(11, true, DICEMILES[2].owned()&&miles[13].owned())
+    buyupg(12, true, DICEMILES[2].owned()&&miles[13].owned())
+    buyupg(13, true, DICEMILES[2].owned()&&miles[13].owned())
+    buyupg(14, true, DICEMILES[2].owned()&&miles[13].owned())
+    buyupg(15, true, DICEMILES[2].owned()&&miles[13].owned())
+    buyupg(16, true, DICEMILES[2].owned()&&miles[13].owned())
+    buyupg(17, true, DICEMILES[2].owned()&&miles[13].owned())
+    buyupg(18, true, DICEMILES[2].owned()&&miles[13].owned())
+    buyupg(19, true, DICEMILES[2].owned()&&miles[13].owned())
+    buyupg(20, true, DICEMILES[2].owned()&&miles[13].owned())
   }
   if(player.auto){
     roll()
@@ -56,8 +51,21 @@ function update(diff, isoffline=false) {
     luckRoll()
   }
   player.luck.points = player.luck.points.add(luckPointGen().mul(diff))
+  // again, the below loc (single) can be optimised
   if(miles[12].owned()){player.luck.freeupgs[5] = player.gamblinglevel.sub(13).pow(2).mul(5).min(200)}
   player.dice.shards = player.dice.shards.add(diceShardGain().mul(diff))
+
+  if(DICEMILES[2].owned()) gamblingReset(false)
+  if(DICEMILES[3].owned()){
+    buyLuckUpg(1)
+    buyLuckUpg(2)
+    buyLuckUpg(3)
+    buyLuckUpg(4)
+    buyLuckUpg(5)
+  }
+  if(player.dice.chal.current > 0){
+    player.dice.chal.best[player.dice.chal.current] = Decimal.max(player.points, player.dice.chal.best[player.dice.chal.current])
+  }
 }
 
 setInterval(function() {
@@ -81,7 +89,7 @@ function tab(tab, subtab=undefined) {
     player.prevtab[player.tab] = player.subtab
     player.subtab = "none"
   }
-  player.tab = tab.toString()
+  player.tab = tab.toString() // WHY DID YOU USE toString?????
 }
 function checkTab(tab, subtab=undefined){
   return player.tab==tab && (subtab==undefined || player.subtab==subtab)
@@ -91,7 +99,10 @@ function getMinRoll() {
   a = a.add(upgs[8].eff())
   a = a.mul(upgs[4].eff()[0])
   a = a.mul(upgs[12].eff())
-
+  a = a.mul(chalEffect(1))
+  if(player.dice.chal.current >= 1) a = a.pow(1/3)
+  if(player.dice.chal.current >= 3) a = a.max(1).log10()
+  
   // a dice cant have negative sides
   a = a.min(player.maxroll)
   return a
@@ -102,6 +113,9 @@ function getMaxRoll() {
   a = a.mul(upgs[4].eff()[1])
   a = a.mul(upgs[7].eff())
   a = a.mul(upgs[13].eff())
+  a = a.mul(chalEffect(1))
+  if(player.dice.chal.current >= 1) a = a.pow(1/3)
+  if(player.dice.chal.current >= 3) a = a.max(1).log10().max(0.000001)
   return a
 }
 function pointMul() {
@@ -120,28 +134,34 @@ function pointMul() {
   if(diceUpgOwned(12)) m = m.mul(DICEUPGS[12].effect())
   if(diceUpgOwned(13)) m = m.mul(DICEUPGS[13].effect())
   if(diceUpgOwned(14)) m = m.mul(DICEUPGS[14].effect())
+  m = m.mul(chalEffect(2))
+  if(player.dice.chal.current >= 1) m = m.pow(0.5)
   return m
 }
-function rollnum() {
+function rollNum() {
   let r = D(Math.random())
   let e = player.maxroll.sub(player.minroll).mul(r).add(player.minroll)
   return e
 }
-function gainEst() {
+function gainEst() { // unused function; can probably be removed
   return pointMul().mul(player.maxroll.sub(player.minroll).div(2).add(player.minroll))
 }
 function roll(a=false) {
-  let x = rollnum(a)
+  let x = rollNum(a)
   player.result = x
   x=x.mul(pointMul())
   player.points = player.points.add(x)
+  player.bestpoints = Decimal.max(player.points, player.bestpoints)
+  if(player.points.gte(1e10) && !player.unl.gambling) player.unl.gambling = true
 }
-function upgCostMod() {
-  let m = D(1)
+function upgCostMod() { // its actually a division, why is it named "modifier"
+  let m = D(1) // when >1 values would expect to increase upgrade cost
   m = m.mul(getItemBoost(2))
+  if(miles[16].owned()) m = m.mul(1e308)
   return m
 }
 const upgs = {
+  // curr is redundant
   1: {
     description() {return `+`+f(D(1).add(upgs[2].eff()))+` to max roll`},
     cost() {
@@ -267,31 +287,40 @@ const upgs = {
     },
   },
   11: {
-    description() {return "Multiply point gain by "+f(d(miles[9].owned()?0.1:0).add(1.05))},
+    description() {return "Multiply point gain by "+f(d((miles[9].owned()?0.1:0) + (DICEMILES[8].owned()?0.1:0)).add(1.05))},
     cost() {return D(1e27).mul(Decimal.pow(1.1, player.upgs[11].pow(2.5-(miles[13].owned()?0.5:0)))).div(upgs[20].eff()).div(upgs.luck[5].eff()).div(upgCostMod())},
-    eff() {return Decimal.pow(d(miles[9].owned()?0.1:0).add(1.05), player.upgs[11])},
+    eff() {return Decimal.pow(d((miles[9].owned()?0.1:0) + (DICEMILES[8].owned()?0.1:0)).add(1.05), player.upgs[11])},
     effDis() {return `x`+f(upgs[11].eff())},
     unlocked() {return miles[8].owned()},
     curr: "points",
     cap() {return D(10000)},
+    buyMax() {
+      player.upgs[11] = player.points.div(1e27).mul(upgCostMod()).mul(upgs[20].eff()).mul(upgs.luck[5].eff()).max(1).log(1.1).pow(1/2).floor().min(10000)
+    }
   },
   12: {
-    description() {return "Multiply minimum roll by "+f(d(miles[9].owned()?0.08:0).add(1.04))},
+    description() {return "Multiply minimum roll by "+f(d((miles[9].owned()?0.08:0) + (DICEMILES[8].owned()?0.13:0)).add(1.04))},
     cost() {return D(1e27).mul(Decimal.pow(1.08, player.upgs[12].pow(2.25-(miles[13].owned()?0.5:0)))).div(upgs[20].eff()).div(upgs.luck[5].eff()).div(upgCostMod())},
-    eff() {return Decimal.pow(d(miles[9].owned()?0.08:0).add(1.04), player.upgs[12])},
+    eff() {return Decimal.pow(d((miles[9].owned()?0.08:0) + (DICEMILES[8].owned()?0.13:0)).add(1.04), player.upgs[12])},
     effDis() {return `x`+f(upgs[12].eff())},
     unlocked() {return miles[8].owned()},
     curr: "points",
     cap() {return D(10000)},
+    buyMax() {
+      player.upgs[12] = player.points.div(1e27).mul(upgCostMod()).mul(upgs[20].eff()).mul(upgs.luck[5].eff()).max(1).log(1.08).pow(1/1.75).floor().min(10000)
+    }
   },
   13: {
-    description() {return "Multiply maximum roll by "+f(d(miles[9].owned()?0.08:0).add(1.04))},
+    description() {return "Multiply maximum roll by "+f(d((miles[9].owned()?0.08:0) + (DICEMILES[8].owned()?0.13:0)).add(1.04))},
     cost() {return D(1e27).mul(Decimal.pow(1.08, player.upgs[13].pow(2.25-(miles[13].owned()?0.5:0)))).div(upgs[20].eff()).div(upgs.luck[5].eff()).div(upgCostMod())},
-    eff() {return Decimal.pow(d(miles[9].owned()?0.08:0).add(1.04), player.upgs[13])},
+    eff() {return Decimal.pow(d((miles[9].owned()?0.08:0) + (DICEMILES[8].owned()?0.13:0)).add(1.04), player.upgs[13])},
     effDis() {return `x`+f(upgs[13].eff())},
     unlocked() {return miles[8].owned()},
     curr: "points",
     cap() {return D(10000)},
+    buyMax() {
+      player.upgs[13] = player.points.div(1e27).mul(upgCostMod()).mul(upgs[20].eff()).mul(upgs.luck[5].eff()).max(1).log(1.08).pow(1/1.75).floor().min(10000)
+    }
   },
   14: {
     description() {return "Divide gambling level requirement by "+f(d(miles[9].owned()?0.5:0).add(1.5))},
@@ -301,6 +330,9 @@ const upgs = {
     unlocked() {return miles[8].owned()},
     curr: "points",
     cap() {return D(10000)},
+    buyMax() {
+      player.upgs[14] = player.points.div(1e27).mul(upgCostMod()).mul(upgs[20].eff()).mul(upgs.luck[5].eff()).max(1).log(1.2).pow(1/2).floor().min(10000)
+    }
   },
   15: {
     description() {return "Multiply the 1/Math.random() in the luck formula by "+f(d(miles[9].owned()?0.15:0).add(1.1))},
@@ -310,6 +342,9 @@ const upgs = {
     unlocked() {return miles[8].owned()},
     curr: "points",
     cap() {return D(10000)},
+    buyMax() {
+      player.upgs[15] = player.points.div(1e27).mul(upgCostMod()).mul(upgs[20].eff()).mul(upgs.luck[5].eff()).max(1).log(1.15).pow(1/1.7).floor().min(10000)
+    }
   },
   16: {
     description() {return "Multiply unluck gain by 1.5"},
@@ -319,6 +354,9 @@ const upgs = {
     unlocked() {return miles[8].owned()},
     curr: "points",
     cap() {return D(100)},
+    buyMax() {
+      player.upgs[16] = player.points.div(1e27).mul(upgCostMod()).mul(upgs[20].eff()).mul(upgs.luck[5].eff()).max(1).log(1.17).pow(1/2).floor().min(100)
+    }
   },
   17: {
     description() {return "Increase the base of the luck point effect formula by 0.01"},
@@ -328,6 +366,9 @@ const upgs = {
     unlocked() {return miles[8].owned()},
     curr: "points",
     cap() {return D(100)},
+    buyMax() {
+      player.upgs[17] = player.points.div(1e27).mul(upgCostMod()).mul(upgs[20].eff()).mul(upgs.luck[5].eff()).max(1).log(1.15).pow(1/2.05).floor().min(100)
+    }
   },
   18: {
     description() {return "Increase the exponent in the unluck effect formula by 0.012"},
@@ -337,6 +378,9 @@ const upgs = {
     unlocked() {return miles[8].owned()},
     curr: "points",
     cap() {return D(100)},
+    buyMax() {
+      player.upgs[18] = player.points.div(1e27).mul(upgCostMod()).mul(upgs[20].eff()).mul(upgs.luck[5].eff()).max(1).log(1.17).pow(1/2.05).floor().min(100)
+    }
   },
   19: {
     description() {return "Add 0.02 to the base of the luck point generation formula"},
@@ -346,6 +390,9 @@ const upgs = {
     unlocked() {return miles[8].owned()},
     curr: "points",
     cap() {return D(100)},
+    buyMax() {
+      player.upgs[19] = player.points.div(1e27).mul(upgCostMod()).mul(upgs[20].eff()).mul(upgs.luck[5].eff()).max(1).log(1.21).pow(1/2.05).floor().min(100)
+    }
   },
   20: {
     description() {return "Divide the cost of pu11~pu19 by 1.4"},
@@ -355,6 +402,9 @@ const upgs = {
     unlocked() {return miles[8].owned()},
     curr: "points",
     cap() {return D(100)},
+    buyMax() {
+      player.upgs[20] = player.points.div(1e27).mul(upgCostMod()).max(1).log(1.6).pow(1/1.3).floor().min(100)
+    }
   },
   luck: {
     1: {
@@ -367,9 +417,9 @@ const upgs = {
       cap() {return D(1000)},
     },
     2: {
-      description() {return `Multiply unluck gain by 3`},
+      description() {return `Multiply unluck gain by `+formatWhole(d(3).pow(miles[18].owned()?3:1))},
       cost() {return D(1000).mul(Decimal.pow(12.5, player.luck.upgs[2].mul(player.luck.upgs[2].div(25).add(1).floor())))},
-      eff() {return Decimal.pow(3, player.luck.upgs[2])},
+      eff() {return Decimal.pow(3, player.luck.upgs[2].mul(miles[18].owned()?3:1))},
       effDis() {return `x`+f(upgs.luck[2].eff())},
       unlocked() {return miles[9].owned()},
       curr: "unluck",
@@ -404,7 +454,10 @@ const upgs = {
     },
   }
 }
-function buyupg(x, isfree=false) {
+function buyupg(x, isfree=false, max=false) { // please use camelCase
+  if(max){
+    upgs[x].buyMax()
+  }
   if(!canAfford(x)) return
   if(!isfree) player[upgs[x].curr] = player[upgs[x].curr].sub(upgs[x].cost())
   player.upgs[x] = player.upgs[x].add(1)
@@ -415,22 +468,26 @@ function buyLuckUpg(x){
   player.luck.upgs[x] = player.luck.upgs[x].add(1)
 }
 function canAfford(x){
-  return player[upgs[x].curr].gte(upgs[x].cost()) && player.upgs[x].lt(upgs[x].cap())
+  return player[upgs[x].curr].gte(upgs[x].cost()) && player.upgs[x].lt(upgs[x].cap().min(player.dice.chal.current >= 4 ? 1 : 99999))
 }
 function canAffordLuckUpg(x){
   return player.luck[upgs.luck[x].curr].gte(upgs.luck[x].cost()) && player.luck.upgs[x].lt(upgs.luck[x].cap())
 }
 
 function gamblingPointBoost(){
-  return Decimal.pow(player.gamblinglevel.add(1), 2)
+  return Decimal.pow(player.gamblinglevel.add(1), 2+(DICEMILES[2].owned()?2:0))
 }
-function gamblingReset(){
+function gamblingReset(reset=true){
   if(!canGamblingReset(player.gamblinglevel)) return
-  player.points = d(0)
-  player.upgs = [null,d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0)]
-  player.result = d(0)
+  if(reset){
+    player.points = d(0)
+    // there's probably a nicer way of doing this
+    player.upgs = [null,d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0),d(0)]
+    player.result = d(0)
+  }
 
   player.gamblinglevel = player.gamblinglevel.add(1)
+  player.bestgl = Decimal.max(player.bestgl, player.gamblinglevel)
 }
 function gamblingReq(x){
   let req = d(0)
@@ -442,9 +499,11 @@ function gamblingReq(x){
   else if(x.gt(7) && x.lt(16)) req = Decimal.pow(10, x.mul(3).add(5))
   // 17+ - 10^(10x-77)
   else if(x.gte(16)) req = Decimal.pow(10, x.mul(10).sub(77))
-  req = req.div(unluckEffect())
-  req = req.div(upgs[14].eff())
-  req = req.div(getItemBoost(3))
+  if(player.dice.chal.current < 1){
+    req = req.div(unluckEffect())
+    req = req.div(upgs[14].eff())
+    req = req.div(getItemBoost(3))
+  }
   if(req.eq(0)) req = Infinity
   return req
 }
@@ -452,7 +511,7 @@ function canGamblingReset(){
   return player.points.gte(gamblingReq(player.gamblinglevel))
 }
 const miles = {
-  0: {owned() {return true}}, // fix for thing idk
+  0: {owned() {return true}}, // fix to show miles 1~3
   1: {
     name: "Gambling Level 1",
     effect: "Increase the cap of pu10 to 3",
@@ -522,6 +581,26 @@ const miles = {
     name: "Gambling Level 21",
     effect: "Unlock dice",
     owned() {return player.gamblinglevel.gte(21)}
+  },
+  15: {
+    name: "Gambling Level 24",
+    effect: "Multiply unluck gain by your luck",
+    owned() {return player.gamblinglevel.gte(24) && DICEMILES[7].owned()}
+  },
+  16: {
+    name: "Gambling Level 25",
+    effect: "Multiply unluck gain by log base 2 of points and divide all point upgrade costs by 10^308",
+    owned() {return player.gamblinglevel.gte(25) && DICEMILES[7].owned()}
+  },
+  17: {
+    name: "Gambling Level 34",
+    effect: "Multiply unluck gain by 10000 and x10 dice gain",
+    owned() {return player.gamblinglevel.gte(34) && DICEMILES[7].owned()}
+  },
+  18: {
+    name: "Gambling Level 35",
+    effect: "The effect of lu2 is cubed",
+    owned() {return player.gamblinglevel.gte(35) && DICEMILES[7].owned()}
   }
 }
 
@@ -540,6 +619,10 @@ function unluckGain(){
   gain = gain.mul(upgs[16].eff())
   gain = gain.mul(upgs.luck[2].eff())
   if(miles[11].owned()) gain = gain.mul(Decimal.pow(3, player.gamblinglevel.sub(12)))
+  gain = gain.mul(chalEffect(4))
+  if(miles[15].owned()) gain = gain.mul(player.luck.luck.max(1))
+  if(miles[16].owned()) gain = gain.mul(player.points.max(1).log(2).max(1))
+  if(miles[17].owned()) gain = gain.mul(10000)
   return gain
 }
 function unluckEffect(){
@@ -550,9 +633,10 @@ function luckRoll(){
   * since the bounds of Math.random() are [0,1),
   * and 1/0 is undefined,
   * it is necessary to do 1-Math.random() in case it returns 0
-  */
+  */ // wow an actually useful comment
   let num = 1-(Math.random())
-  let base = d(1/num).mul(luckChanceMulti()).log(2).add(1)
+  let base = d(1/num).mul(luckChanceMulti()).log(2+(player.dice.chal.current>=1?8:0)).add(1)
+  if(player.dice.chal.current >= 2) base = d(0)
 
   if(base.gt(player.luck.luck)) player.luck.luck = base
   else player.luck.unluck = player.luck.unluck.add(unluckGain())

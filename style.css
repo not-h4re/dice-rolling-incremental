@@ -64,7 +64,7 @@ h2 {
   color: white;
 }
 .gl {
-  color: #910000;
+  color: #ff5145
 }
 .l {
   color: #00bf16;
@@ -82,7 +82,7 @@ h2 {
 }
 
 .upg {
-  min-height: 125px;
+  min-height: 135px;
   width: 150px;
   border-radius: 5px;
   border: 2px solid #ffffff;
@@ -94,6 +94,15 @@ h2 {
 .wide {
   width: 375px;
   min-height: 75px;
+}
+.big {
+  width: 250px;
+  height: 140px;
+  transition: .3s;
+}
+.big:hover {
+  transform: scale(1.15);
+  z-index: 9999;
 }
 .reset {
   min-height: 125px;
@@ -159,5 +168,5 @@ h2 {
   transition: .7s;
 }
 .diceunowned {
-  background-color: #000000;
+  background-color: #111111;
 }

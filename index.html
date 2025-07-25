@@ -24,7 +24,9 @@
     <div id="app">
       
       <!-- POINT DISPLAY -->
-      You have <h2 class="glow p">{{f(player.points)}}</h2> points<br><br>
+      You have <h2 class="glow p">{{f(player.points)}}</h2> points<br>
+      <span v-if="player.dice.chal.current > 0">You are in dice challenge {{formatWhole(player.dice.chal.current)}}<br></span>
+      <br>
       
       <!-- TABS -->
       <button class="tab" onclick="tab('main', 'none')">
@@ -121,6 +123,14 @@
                 {{miles[n].effect}}
               </div>
             </span>
+            <span v-for="n in 4">
+              <div :class="{milestone: true, got: miles[n+14].owned()}" v-if="miles[Math.max(0, n-4)].owned() && DICEMILES[7].owned()">
+                <h3 class="inline">
+                  {{miles[n+14].name}}
+                </h3><br>
+                {{miles[n+14].effect}}
+              </div>
+            </span>
           </div>
         </div>
         <div v-if="player.subtab=='luck'">
@@ -130,7 +140,7 @@
           Your luck generates {{format(luckPointGen(), 5)}} luck points/second<br>
           You also have <span class="glow l">{{format(player.luck.unluck)}}</span> unluck, dividing gambling level requirement by {{format(unluckEffect())}}<br>
           You gain {{format(unluckGain())}} unluck per roll that did not increase your luck<br>
-          Luck formula: log<sub>2</sub>(1/(1-Math.random()) * {{format(luckChanceMulti())}}) + 1<br>
+          Luck formula: log<sub>{{formatWhole(d(2+(player.dice.chal.current>=1?8:0)))}}</sub>(1/(1-Math.random()) * {{format(luckChanceMulti())}}) + 1<br>
           <br>
           <div class="opt upgs">
             <button onclick="luckRoll()" class="rollbtn upg">
@@ -163,6 +173,9 @@
         <button class="tab" onclick="player.subtab='tokens'" v-if="player.dice.resets > 0">
           Tokens
         </button>
+        <button class="tab" onclick="player.subtab='chal'" v-if="DICEMILES[6].owned()">
+          Challenges
+        </button>
         <div v-if="player.subtab=='main'">
           You have <span class="glow d">{{f(player.dice.amount)}}</span> dice<br>
           1e100 points and Gambling Level 21 are required to reset<br>
@@ -170,7 +183,19 @@
           <br>
           <button :class="{reset: true, can: canDiceReset()}" onclick="diceReset()">
             Gain {{f(diceGain())}} dice, but reset everything before this point
-          </button>
+            <span v-if="diceGain().lt(1000)"><br>(unfloored gain: {{f(diceGain(false))}})</span>
+          </button><br>
+          <br>
+          <div class="milecontainer">
+            <span v-for="n in 11">
+              <div :class="{milestone: true, got: DICEMILES[n].owned()}" v-if="DICEMILES[Math.max(0, n-4)].owned()">
+                <h3 class="inline">
+                  {{DICEMILES[n].name}}
+                </h3><br>
+                {{DICEMILES[n].effect}}
+              </div>
+            </span>
+          </div>
         </div>
         <div v-if="player.subtab=='items'">
           You have <span class="glow d">{{f(player.dice.shards)}}</span> dice shards (+<span class="glow d">{{f(diceShardGain())}}</span>/s)<br>
@@ -195,7 +220,6 @@
           <br>
           Your {{ITEM_NAMES[3]}} is currently tier {{formatWhole(player.dice.items[3])}}<br>
           This is {{BOOST_TEXT[3]}} by <span class="glow d">{{f(getItemBoost(3))}}</span><br>
-          It also makes you start at gambling level {{formatWhole(player.dice.items[3].min(16))}}<br>
           <button :class="{upg: true, wide: true, can: player.dice.shards.gte(upgradeCost(3))}" onclick="upgradeItem(3)">
             Attempt to increase the tier of your {{ITEM_NAMES[3]}}<br>
             Cost: {{f(upgradeCost(3))}} dice shards<br>
@@ -212,9 +236,14 @@
         </div>
         <div v-if="player.subtab=='tokens'">
           You have <span class="glow d">{{formatWhole(player.dice.tokens)}}</span> upgrade tokens ({{formatWhole(player.dice.totaltokens)}} total)<br>
-          <button :class="{upg: true, can: player.dice.amount.gte(tokenCost())}" onclick="buyToken()">
-            Buy an upgrade token<br>
-            Cost: {{formatWhole(tokenCost())}} dice
+          <button :class="{upg: true, can: player.dice.amount.gte(tokenCost()) && player.dice.totaltokens.lt(32)}" onclick="buyToken()">
+            <span v-if="player.dice.totaltokens.lt(32)">
+              Buy an upgrade token<br>
+              Cost: {{formatWhole(tokenCost())}} dice
+            </span>
+            <span v-if="player.dice.totaltokens.gte(32)">
+              You cannot buy any more upgrade tokens
+            </span>
           </button><br>
           <br>
           Buying an upgrade increases the cost of all upgrades in the row,<br>
@@ -227,7 +256,7 @@
           </span>
           <span class="opt upgs" v-for="n in 4">
             <span v-for="m in 4">
-              <button :class="{upg: true, can: player.dice.tokens.gte(diceUpgCost(n*10+m)), diceunowned:!diceUpgOwned(n*10+m), diceowned:diceUpgOwned(n*10+m)}" @click="buyDiceUpg(n*10+m)">
+              <button :class="{upg: true, can: player.dice.tokens.gte(diceUpgCost(n*10+m))&&!diceUpgOwned(n*10+m), diceunowned:!diceUpgOwned(n*10+m), diceowned:diceUpgOwned(n*10+m)}" @click="buyDiceUpg(n*10+m)">
                 (du{{n*10+m}})<br>
                 {{DICEUPGS[n*10+m].description}}<br>
                 Currently: {{DICEUPGS.symbolsByRow[n-1]}}{{f(DICEUPGS[n*10+m].effect())}}<br>
@@ -235,6 +264,52 @@
               </button>
             </span>
           </span>
+        </div>
+        <div v-if="player.subtab=='chal'">
+          Entering a challenge will cause a dice reset<br>
+          Challenges provide boosts based on your best points in the challenge<br>
+          You can only be in one challenge at any time<br>
+          Clicking any challenge button while in a challenge will exit the challenge<br>
+          <br>
+          In any challenge (applied before the challenge effects):<br>
+          - The point gain multiplier is square rooted<br>
+          - Minimum and maximum roll are cube rooted<br>
+          - Anything reducing gambling level requirement becomes ineffective<br>
+          - Luck is based on log<sub>10</sub> instead of log<sub>2</sub><br>
+          - The effects of the challenge(s) above it are also applied<br>
+          <br>
+          <div class="opt upgs">
+            <button class="upg big" onclick="enterChal(1)">
+              Challenge 1<br>
+              There are no other debuffs (ie. only the ones listed above apply)<br>
+              Best points: {{f(player.dice.chal.best[1])}}<br>
+              This boosts minimum and maximum roll by x{{f(chalEffect(1))}}<br>
+              Click this button to enter/exit the challenge
+            </button>
+            <button class="upg big" onclick="enterChal(2)">
+              Challenge 2<br>
+              You can't gain luck (<span style="font-style: italic;">You can still gain unluck</span>)<br>
+              Best points: {{f(player.dice.chal.best[2])}}<br>
+              This boosts point gain by x{{f(chalEffect(2))}}<br>
+              Click this button to enter/exit the challenge
+            </button>
+          </div>
+          <div class="opt upgs">
+            <button class="upg big" onclick="enterChal(3)">
+              Challenge 3<br>
+              Minimum and maximum roll become log<sub>10</sub> of their original values<br>
+              Best points: {{f(player.dice.chal.best[3])}}<br>
+              This boosts dice gain by x{{f(chalEffect(3))}}<br>
+              Click this button to enter/exit the challenge
+            </button>
+            <button class="upg big" onclick="enterChal(4)">
+              Challenge 4<br>
+              You can only have 1 level of each upgrade (<span style="font-style: italic;">This includes luck upgrades</span>)<br>
+              Best points: {{f(player.dice.chal.best[4])}}<br>
+              This boosts unluck gain by x{{f(chalEffect(4))}}<br>
+              Click this button to enter/exit the challenge
+            </button>
+          </div>
         </div>
       </div>
       
