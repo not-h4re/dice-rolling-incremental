@@ -285,7 +285,17 @@ const DICEMILES = {
       }
       return tier.gte(50)
     }
-  }
+  },
+  12: {
+    name: "2.73e273 points",
+    effect: "Unlock new dice upgrades. They are unaffected by cost reductions from milestones",
+    owned() {return player.bestpoints.gte(2.73e273)}
+  },
+  13: {
+    name: "1e288 points",
+    effect: "Multiply minimum and maximum roll by 1e15",
+    owned() {return player.bestpoints.gte(1e288)}
+  },
 }
 
 function enterChal(n){
@@ -322,5 +332,85 @@ function chalEffect(n){
       default:
         return d(1)
     }
+  }
+}
+
+function chalTokenAmount() {
+  if(!DICEMILES[12].owned()) return D(0)
+  let pointProduct = d(1)
+  for(let i=1;i<=4;i++){
+    pointProduct = pointProduct.mul(player.dice.chal.best[i])
+  }
+  return pointProduct.max(1).log10().div(10).pow(0.5).max(0).floor()
+}
+function diceChalScore() {
+  let pointProduct = d(1)
+  for(let i=1;i<=4;i++){
+    pointProduct = pointProduct.mul(player.dice.chal.best[i])
+  }
+  return pointProduct
+}
+function spentChalTokens(){
+  return Decimal.pow(player.dice.chal.upgs.length, 2).add(player.dice.chal.upgs.length).div(2).round()
+}
+function currentChalTokens(){
+  return chalTokenAmount().sub(spentChalTokens()).round()
+}
+const chalUpgs = {
+  symbols: ['x','x','x','/','/','/','^','x','x'],
+  11: {
+    description: "Multiply point gain by 100000",
+    effect() {return d(100000)}
+  },
+  12: {
+    description: "Multiply point gain based on gambling level",
+    effect() {return Decimal.pow(1.5, player.gamblinglevel)}
+  },
+  13: {
+    description: "Multiply point gain based on total challenge tokens",
+    effect() {return chalTokenAmount().pow(3).max(1)}
+  },
+  21: {
+    description: "Divide gambling level requirement by 100000",
+    effect() {return d(100000)}
+  },
+  22: {
+    description: "Divide gambling level requirement based on total dice",
+    effect() {return player.dice.total.max(1).pow(0.5)}
+  },
+  23: {
+    description: "Divide gambling level requirement based on points",
+    effect() {return player.points.max(1).log10().pow(2.5)}
+  },
+  31: {
+    description: "Raise unluck gain to 1.2",
+    effect() {return d(1.2)}
+  },
+  32: {
+    description: "Multiply unluck gain based on unluck",
+    effect() {return player.luck.unluck.max(1).log(2).pow(6)}
+  },
+  33: {
+    description: "Multiply unluck gain based on challenge upgrades owned",
+    effect() {return Decimal.pow(2.5, player.dice.chal.upgs.length)}
+  }
+}
+function chalUpgCost() {
+  return D(1).add(player.dice.chal.upgs.length).round()
+}
+function canAffordChalUpg(){
+  return currentChalTokens().gte(chalUpgCost())
+}
+function buyChalUpg(id){
+  if(!canAffordChalUpg() && !chalUpgOwned(id)) return
+  else player.dice.chal.upgs.push(id)
+}
+function chalUpgOwned(id){
+  return player.dice.chal.upgs.includes(id)
+}
+function respecChalUpgs(){
+  if(confirm("This will reset all challenge upgrades, give you your challenge tokens back and force a dice reset")){
+    diceReset(true)
+    player.dice.chal.upgs = []
   }
 }

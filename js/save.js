@@ -10,11 +10,13 @@ function start(){
     // tabs
     tab: "main",
     subtab: "none",
+    microtab: "none",
     // other
     lasttick: 0,
     unl: {
       gambling: false,
       dice: false,
+      void: false,
     },
     // base game
     points: d(0),
@@ -51,8 +53,13 @@ function start(){
       totaltokens: d(0),
       chal: {
         current: 0,
-        best: [null,d(0),d(0),d(0),d(0)]
+        best: [null,d(0),d(0),d(0),d(0)],
+        upgs: [],
       },
+    },
+    // sacrifice
+    void: {
+      resets: 0,
     },
     // options
     offlineprogress: true,

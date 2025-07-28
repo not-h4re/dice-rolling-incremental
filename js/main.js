@@ -83,10 +83,14 @@ function d(x){
 function currentTime() {
   return Date.now()
 }
-function tab(tab, subtab=undefined) {
+function tab(tab, subtab=undefined, microtab=undefined) {
+  if(microtab != undefined) player.microtab = microtab
+  else if(player.microtab != "none"){
+    player.microtab = "none"
+  }
+  console.log("set microtab to "+microtab)
   if(subtab != undefined) player.subtab = subtab
   else if(player.subtab != "none"){
-    player.prevtab[player.tab] = player.subtab
     player.subtab = "none"
   }
   player.tab = tab.toString() // WHY DID YOU USE toString?????
@@ -100,6 +104,7 @@ function getMinRoll() {
   a = a.mul(upgs[4].eff()[0])
   a = a.mul(upgs[12].eff())
   a = a.mul(chalEffect(1))
+  if(DICEMILES[13].owned()) a = a.mul(1e15)
   if(player.dice.chal.current >= 1) a = a.pow(1/3)
   if(player.dice.chal.current >= 3) a = a.max(1).log10()
   
@@ -114,6 +119,7 @@ function getMaxRoll() {
   a = a.mul(upgs[7].eff())
   a = a.mul(upgs[13].eff())
   a = a.mul(chalEffect(1))
+  if(DICEMILES[13].owned()) a = a.mul(1e15)
   if(player.dice.chal.current >= 1) a = a.pow(1/3)
   if(player.dice.chal.current >= 3) a = a.max(1).log10().max(0.000001)
   return a
@@ -135,6 +141,9 @@ function pointMul() {
   if(diceUpgOwned(13)) m = m.mul(DICEUPGS[13].effect())
   if(diceUpgOwned(14)) m = m.mul(DICEUPGS[14].effect())
   m = m.mul(chalEffect(2))
+  if(chalUpgOwned(11)) m = m.mul(chalUpgs[11].effect())
+  if(chalUpgOwned(12)) m = m.mul(chalUpgs[12].effect())
+  if(chalUpgOwned(13)) m = m.mul(chalUpgs[13].effect())
   if(player.dice.chal.current >= 1) m = m.pow(0.5)
   return m
 }
@@ -150,9 +159,10 @@ function roll(a=false) {
   let x = rollNum(a)
   player.result = x
   x=x.mul(pointMul())
-  player.points = player.points.add(x)
+  player.points = Decimal.min(player.points.add(x), 1.79e308)
   player.bestpoints = Decimal.max(player.points, player.bestpoints)
   if(player.points.gte(1e10) && !player.unl.gambling) player.unl.gambling = true
+  if(player.points.gte(1.79e308) && !player.unl.void) player.unl.void = true
 }
 function upgCostMod() { // its actually a division, why is it named "modifier"
   let m = D(1) // when >1 values would expect to increase upgrade cost
@@ -504,6 +514,9 @@ function gamblingReq(x){
     req = req.div(upgs[14].eff())
     req = req.div(getItemBoost(3))
   }
+  if(chalUpgOwned(21)) req = req.div(chalUpgs[21].effect())
+  if(chalUpgOwned(22)) req = req.div(chalUpgs[22].effect())
+  if(chalUpgOwned(23)) req = req.div(chalUpgs[23].effect())
   if(req.eq(0)) req = Infinity
   return req
 }
@@ -623,6 +636,9 @@ function unluckGain(){
   if(miles[15].owned()) gain = gain.mul(player.luck.luck.max(1))
   if(miles[16].owned()) gain = gain.mul(player.points.max(1).log(2).max(1))
   if(miles[17].owned()) gain = gain.mul(10000)
+  if(chalUpgOwned(31)) gain = gain.pow(chalUpgs[31].effect())
+  if(chalUpgOwned(32)) gain = gain.mul(chalUpgs[32].effect())
+  if(chalUpgOwned(33)) gain = gain.mul(chalUpgs[33].effect())
   return gain
 }
 function unluckEffect(){

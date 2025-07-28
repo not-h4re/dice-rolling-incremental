@@ -55,6 +55,22 @@ h2 {
   border: 2px solid #dddddd;
 }
 
+.microtab {
+  height: 25px;
+  width: 125px;
+  background-color: #000000;
+  border: 1.66px solid #ffffff;
+  font-size: 16.6px;
+  color: white;
+  border-radius: 4.16px;
+  transition: .3s;
+}
+.microtab:hover {
+  background-color: #ffffff;
+  color: black;
+  border: 2px solid #dddddd;
+}
+
 .glow {
   display: inline;
   font-size: 23px;
