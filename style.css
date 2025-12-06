@@ -89,7 +89,7 @@ h2 {
   color: #9b22f2;
 }
 .s {
-  color: #4f4f4f;
+  color: #6b6b6b;
 }
 
 .opt {
@@ -119,6 +119,11 @@ h2 {
 .big:hover {
   transform: scale(1.15);
   z-index: 9999;
+}
+.max {
+  border: 2px solid #888888;
+  color: #888888;
+  background-color: #000;
 }
 .reset {
   min-height: 125px;

@@ -57,9 +57,9 @@ function start(){
         upgs: [],
       },
     },
-    // sacrifice
-    void: {
-      resets: 0,
+    // idri
+    idri: {
+      ut: d(0),
     },
     // options
     offlineprogress: true,

@@ -43,7 +43,7 @@ function diceReset(force=false){
 }
 
 function diceShardGain(){
-  let gain = d(0.1)
+  let gain = d(1)
   gain = gain.mul(player.dice.total)
   if(diceUpgOwned(41)) gain = gain.mul(DICEUPGS[41].effect())
   if(diceUpgOwned(42)) gain = gain.mul(DICEUPGS[42].effect())
@@ -211,13 +211,12 @@ function respecDiceUpgs(){
 
 function tokenCost(){
   let cost = Decimal.pow(2, player.dice.totaltokens)
-  if(DICEMILES[1].owned()) cost = cost.div(4)
-  if(DICEMILES[2].owned()) cost = cost.div(4)
+  if(DICEMILES[3].owned()) cost = cost.div(16)
   if(DICEMILES[9].owned()) cost = cost.div(16)
   return cost.round()
 }
 function buyToken(){
-  if(player.dice.amount.lt(tokenCost()) && !player.dice.totaltokens.lt(32)) return
+  if(player.dice.amount.lt(tokenCost()) || !player.dice.totaltokens.lt(32)) return
   player.dice.amount = player.dice.amount.sub(tokenCost())
   player.dice.tokens = player.dice.tokens.add(1).round()
   player.dice.totaltokens = player.dice.totaltokens.add(1).round()
@@ -226,29 +225,29 @@ function buyToken(){
 const DICEMILES = {
   0: {owned() {return true}}, // fix for bad code
   1: {
-    name: "1e106 points",
-    effect: "Start at gambling level 4 after dice resets, and the cost of upgrade tokens is reduced by 75%",
-    owned() {return player.bestpoints.gte(1e106)}
+    name: "1e100 points",
+    effect: "Start at gambling level 4 after dice resets",
+    owned() {return player.bestpoints.gte(1e100)}
   },
   2: {
-    name: "Gambling Level 22",
+    name: "1e106 points",
     effect: "Automatically perform gambling level resets without resetting anything, and you can buy max pu11~20, but only if you have the gambling level 16 milestone. Also improve the gambling level effect",
-    owned() {return player.bestgl.gte(22)}
+    owned() {return player.bestpoints.gte(1e106)}
   },
   3: {
-    name: "1.11e111 points",
-    effect: "Automatically buy luck upgrades, and reduce the cost of dice upgrades by 4 upgrade tokens (can't go below 1). Also divide the cost of upgrade tokens by 4",
-    owned() {return player.bestpoints.gte(1.11e111)}
+    name: "1.11e109 points",
+    effect: "Automatically buy luck upgrades, and reduce the cost of dice upgrades by 4 upgrade tokens (can't go below 1). Also divide the cost of upgrade tokens by 16",
+    owned() {return player.bestpoints.gte(1.11e109)}
   },
   4: {
-    name: "8 total upgrade tokens",
+    name: "7 total upgrade tokens",
     effect: "Roll and luck roll automation are both kept on dice resets",
-    owned() {return player.dice.totaltokens.gte(8)}
+    owned() {return player.dice.totaltokens.gte(7)}
   },
   5: {
-    name: "1e114 points",
+    name: "1e112 points",
     effect: "Multiply dice shard gain by 100, and add 0.1 to the base in item tier generation",
-    owned() {return player.bestpoints.gte(1e114)}
+    owned() {return player.bestpoints.gte(1e112)}
   },
   6: {
     name: "1e119 points",
@@ -256,9 +255,9 @@ const DICEMILES = {
     owned() {return player.bestpoints.gte(1e119)}
   },
   7: {
-    name: "18 total upgrade tokens",
+    name: "16 total upgrade tokens",
     effect: "Unlock more gambling level milestones",
-    owned() {return player.dice.totaltokens.gte(18)}
+    owned() {return player.dice.totaltokens.gte(16)}
   },
   8: {
     name: "3e160 points",
@@ -271,19 +270,19 @@ const DICEMILES = {
     owned() {return player.bestgl.gte(31)}
   },
   10: {
-    name: "24 total upgrade tokens",
+    name: "22 total upgrade tokens",
     effect: "Reduce the cost of all dice upgrades by 15 upgrade tokens",
-    owned() {return player.dice.totaltokens.gte(24)}
+    owned() {return player.dice.totaltokens.gte(22)}
   },
   11: {
-    name: "50 total item tiers",
+    name: "42 total item tiers",
     effect: "Boosts from challenges are better",
     owned() {
       let tier = d(0)
       for(let i=1;i<=4;i++){
         tier = tier.add(player.dice.items[i])
       }
-      return tier.gte(50)
+      return tier.gte(42)
     }
   },
   12: {
@@ -295,6 +294,11 @@ const DICEMILES = {
     name: "1e288 points",
     effect: "Multiply minimum and maximum roll by 1e15",
     owned() {return player.bestpoints.gte(1e288)}
+  },
+  14: {
+    name: "1.79e308 points",
+    effect: "Unlock sacrifice",
+    owned() {return player.bestpoints.gte(1.79e308)}
   },
 }
 
@@ -388,7 +392,7 @@ const chalUpgs = {
   },
   32: {
     description: "Multiply unluck gain based on unluck",
-    effect() {return player.luck.unluck.max(1).log(2).pow(6)}
+    effect() {return player.luck.unluck.max(1).log(2).max(1).pow(8)}
   },
   33: {
     description: "Multiply unluck gain based on challenge upgrades owned",

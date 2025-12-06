@@ -129,13 +129,14 @@ function pointMul() {
   m = m.add(upgs[9].eff())
   m = m.mul(upgs[3].eff())
   m = m.mul(upgs[6].eff())
-  m = m.pow(upgs[5].eff()) // mrow
+  m = m.pow(upgs[5].eff()) // this is the poweff
   m = m.mul(upgs[10].eff())
   m = m.mul(gamblingPointBoost())
   m = m.mul(luckToPointBoost())
   m = m.mul(upgs[11].eff())
   m = m.mul(upgs.luck[4].eff())
   m = m.mul(getItemBoost(1))
+  if(miles[7].owned()) m = m.mul(25)
   if(diceUpgOwned(11)) m = m.mul(DICEUPGS[11].effect())
   if(diceUpgOwned(12)) m = m.mul(DICEUPGS[12].effect())
   if(diceUpgOwned(13)) m = m.mul(DICEUPGS[13].effect())
@@ -501,19 +502,20 @@ function gamblingReset(reset=true){
 }
 function gamblingReq(x){
   let req = d(0)
-  // 0~6 - 100^(x+4)
+  // 0~6 - 100^(x+5)
   if(x.lt(7)) req = Decimal.pow(100, x.add(5))
   // 7 - 10^26
   else if(x.eq(7)) req = Decimal.pow(10, 26)
-  // 8~16 - 10^(3x+5)
+  // 8~15 - 10^(3x+5)
   else if(x.gt(7) && x.lt(16)) req = Decimal.pow(10, x.mul(3).add(5))
-  // 17+ - 10^(10x-77)
+  // 16+ - 10^(10x-77)
   else if(x.gte(16)) req = Decimal.pow(10, x.mul(10).sub(77))
   if(player.dice.chal.current < 1){
     req = req.div(unluckEffect())
     req = req.div(upgs[14].eff())
     req = req.div(getItemBoost(3))
   }
+  if(x.eq(14) || x.eq(15)) req = req.div(50)
   if(chalUpgOwned(21)) req = req.div(chalUpgs[21].effect())
   if(chalUpgOwned(22)) req = req.div(chalUpgs[22].effect())
   if(chalUpgOwned(23)) req = req.div(chalUpgs[23].effect())
@@ -552,12 +554,12 @@ const miles = {
   },
   6: {
     name: "Gambling Level 7",
-    effect: "Increase the cap of pu6 to 10, and its cost scales faster after having level 4... is this getting boring yet? Also, the pu9 effect is raised to 2.2",
+    effect: "Increase the cap of pu6 to 10, and its cost scales faster after having level 4. Also, the pu9 effect is raised to 2.2",
     owned() {return player.gamblinglevel.gte(7)},
   },
   7: {
     name: "Gambling Level 8",
-    effect: "Unlock luck and automatically perform regular rolls",
+    effect: "Unlock luck and automatically perform regular rolls. Also, 25x point gain",
     owned() {return player.gamblinglevel.gte(8)}
   },
   8: {

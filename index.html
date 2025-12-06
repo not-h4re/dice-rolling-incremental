@@ -10,13 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Victor+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script src="js/main.js" defer></script>
     <script src="js/dice.js" defer></script>
+    <script src="js/idri.js" defer></script>
     <script src="js/save.js"></script>
     <script src="libs/break_eternity.js"></script>
     <script src="js/customFormat.js" defer></script>
-    <script src="libs/notify.js" defer></script>
     
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
@@ -38,8 +37,8 @@
       <button class="tab" v-if="player.unl.dice" onclick="tab('dice', 'main')">
         Dice
       </button>
-      <button class="tab" v-if="player.unl.void" onclick="tab('void', 'main')">
-        Sacrifice
+      <button class="tab" v-if="player.unl.idri" onclick="tab('idri', 'main')">
+        layer name
       </button>
       <button class="tab" onclick="tab('opt', 'none')">
         Options
@@ -64,7 +63,7 @@
         </span>
         <br><br>
         <span class="opt upgs">
-          <button :class="{upg: true, can: canAfford(n)}" @click="buyupg(n)" v-if="upgs[n].unlocked()" v-for="n in 5">
+          <button :class="{upg: true, can: canAfford(n), max: player.upgs[n].gte(upgs[n].cap())}" @click="buyupg(n)" v-if="upgs[n].unlocked()" v-for="n in 5">
             (pu{{n}}, {{f(player.upgs[n], 0)}}/{{f(upgs[n].cap(), 0)}})<br>
             {{upgs[n].description()}}<br>
             Currently: {{upgs[n].effDis()}}<br>
@@ -72,7 +71,7 @@
           </button>
         </span>
         <span class="opt upgs">
-          <button :class="{upg: true, can: canAfford(n+5)}" @click="buyupg(n+5)" v-if="upgs[n+5].unlocked()" v-for="n in 5">
+          <button :class="{upg: true, can: canAfford(n+5), max: player.upgs[n+5].gte(upgs[n+5].cap())}" @click="buyupg(n+5)" v-if="upgs[n+5].unlocked()" v-for="n in 5">
             (pu{{n+5}}, {{f(player.upgs[n+5], 0)}}/{{f(upgs[n+5].cap(), 0)}})<br>
             {{upgs[n+5].description()}}<br>
             Currently: {{upgs[n+5].effDis()}}<br>
@@ -80,7 +79,7 @@
           </button>
         </span>
         <span class="opt upgs">
-          <button :class="{upg: true, can: canAfford(n+10)}" @click="buyupg(n+10)" v-if="upgs[n+10].unlocked()" v-for="n in 5">
+          <button :class="{upg: true, can: canAfford(n+10), max: player.upgs[n+10].gte(upgs[n+10].cap())}" @click="buyupg(n+10)" v-if="upgs[n+10].unlocked()" v-for="n in 5">
             (pu{{n+10}}, {{f(player.upgs[n+10], 0)}}/{{f(upgs[n+10].cap(), 0)}})<br>
             {{upgs[n+10].description()}}<br>
             Currently: {{upgs[n+10].effDis()}}<br>
@@ -88,7 +87,7 @@
           </button>
         </span>
         <span class="opt upgs">
-          <button :class="{upg: true, can: canAfford(n+15)}" @click="buyupg(n+15)" v-if="upgs[n+15].unlocked()" v-for="n in 5">
+          <button :class="{upg: true, can: canAfford(n+15), max: player.upgs[n+15].gte(upgs[n+15].cap())}" @click="buyupg(n+15)" v-if="upgs[n+15].unlocked()" v-for="n in 5">
             (pu{{n+15}}, {{f(player.upgs[n+15], 0)}}/{{f(upgs[n+15].cap(), 0)}})<br>
             {{upgs[n+15].description()}}<br>
             Currently: {{upgs[n+15].effDis()}}<br>
@@ -190,7 +189,7 @@
           </button><br>
           <br>
           <div class="milecontainer">
-            <span v-for="n in 12">
+            <span v-for="n in 14">
               <div :class="{milestone: true, got: DICEMILES[n].owned()}" v-if="DICEMILES[Math.max(0, n-4)].owned()">
                 <h3 class="inline">
                   {{DICEMILES[n].name}}
@@ -348,9 +347,12 @@
         </div>
       </div>
 
-      <div v-if="player.tab=='void'">
-        i think it wants your points idk<br>
-        coming in 0.2b7
+      <div v-if="player.tab=='idri'">
+        <button class="tab" onclick="player.subtab = 'main'">
+          Main
+        </button>
+        <br>
+        wow idri so peak
       </div>
       
       <!-- OPTIONS -->
@@ -384,7 +386,7 @@
           TODO make importbox modal
           -->
         </div><br>
-        You are playing dice rolling incremental v0.2b6 - void sacrifices (not yet implemented) + revamp<br>
+        You are playing dice rolling incremental v0.2b7 - ??? + revamp<br>
       </div>
     </div>
   </body>
